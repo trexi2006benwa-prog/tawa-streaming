@@ -93,11 +93,14 @@ def get_videos():
             'upload_date': video[3]
         })
     
-    return jsonify(video_list)  																									         if __name__ == '__main__':
+    return jsonify(video_list)
+    
+    if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))  # Render uses port 10000
     print("🎬 TAWA Streaming Platform Starting...")
     print("📁 Upload folder ready")
     print("💾 Database initialized")
     print("🌐 Server running!")
+
     app.run(host='0.0.0.0', port=port)
