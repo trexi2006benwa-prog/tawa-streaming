@@ -147,22 +147,7 @@
             <div class="video-card" onclick="showWelcome()">
                 <div class="video-thumbnail">🎥</div>
                 <div class="video-info">
-                    <div class="video-title">Welcome to TAWA!</div>
-                    <div>Upload your first video to get started</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Video Player Modal -->
-    <div class="player-modal" id="playerModal">
-        <button class="close-btn" onclick="closePlayer()">×</button>
-        <video class="video-player" id="videoPlayer" controls>
-            Your browser does not support the video tag.
-        </video>
-    </div>
-
-    <script>
+                    <script>
         // Load videos when page loads
         document.addEventListener('DOMContentLoaded', loadVideos);
 
@@ -192,7 +177,7 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Video uploaded successfully to TAWA!');
+                    alert('✅ Video uploaded successfully to cloud storage!');
                     loadVideos();
                     document.getElementById('uploadForm').reset();
                 } else {
@@ -228,13 +213,14 @@
                 videos.forEach(video => {
                     const videoCard = document.createElement('div');
                     videoCard.className = 'video-card';
-                    videoCard.onclick = () => playVideo(video.filename, video.title);
+                    videoCard.onclick = () => playVideo(video.s3_url, video.title);
                     
                     videoCard.innerHTML = `
                         <div class="video-thumbnail">▶️</div>
                         <div class="video-info">
                             <div class="video-title">${video.title}</div>
                             <div>Uploaded: ${new Date(video.upload_date).toLocaleDateString()}</div>
+                            <div style="font-size: 12px; color: #60A5FA;">☁️ Cloud Storage</div>
                         </div>
                     `;
                     
@@ -245,12 +231,12 @@
             }
         }
 
-        // Play video
-        function playVideo(filename, title) {
+        // Play video directly from S3
+        function playVideo(videoUrl, title) {
             const modal = document.getElementById('playerModal');
             const player = document.getElementById('videoPlayer');
             
-            player.src = `/video/${filename}`;
+            player.src = videoUrl;
             player.load();
             
             modal.style.display = 'block';
@@ -264,11 +250,12 @@
             
             modal.style.display = 'none';
             player.pause();
+            player.src = '';
         }
 
         // Welcome message
         function showWelcome() {
-            alert('🎬 Welcome to TAWA!\n\nUpload videos using the form above, then click to play them here!');
+            alert('🎬 Welcome to TAWA!\n\nUpload videos using the form above, then click to play them here!\n\n☁️ Videos now stored in secure cloud storage!');
         }
 
         // Close modal when clicking outside
@@ -279,5 +266,3 @@
             }
         }
     </script>
-</body>
-</html>
