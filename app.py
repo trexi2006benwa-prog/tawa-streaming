@@ -62,7 +62,22 @@ def allowed_file(filename):
     allowed_extensions = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in allowed_extensions
-
+@app.route('/fix-db')
+def force_fix_db():
+    """Force database fix - run this once then remove the route"""
+    fix_database()
+    
+    # Check if fix worked
+    conn = sqlite3.connect('tawa.db')
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, title, filename, s3_key, upload_date FROM videos LIMIT 1")
+        result = "✅ Database fixed successfully! s3_key column exists."
+    except Exception as e:
+        result = f"❌ Still broken: {e}"
+    conn.close()
+    
+    return result
 # Routes
 @app.route('/')
 def home():
@@ -228,3 +243,4 @@ if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
