@@ -19,6 +19,27 @@ s3_client = boto3.client(
     region_name=AWS_REGION
 )
 
+def fix_database():
+    """Add missing columns to existing database"""
+    conn = sqlite3.connect('tawa.db')
+    c = conn.cursor()
+    try:
+        # Check if s3_key column exists
+        c.execute("PRAGMA table_info(videos)")
+        columns = [column[1] for column in c.fetchall()]
+        
+        if 's3_key' not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
+            print("✅ Added missing s3_key column to existing database")
+        else:
+            print("✅ s3_key column already exists")
+            
+    except Exception as e:
+        print("Error checking/adding columns:", e)
+    finally:
+        conn.commit()
+        conn.close()
+
 # Initialize database
 def init_db():
     conn = sqlite3.connect('tawa.db')
@@ -33,6 +54,9 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+    
+    # Call the fix function
+    fix_database()
 
 def allowed_file(filename):
     allowed_extensions = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
@@ -112,7 +136,7 @@ def get_videos():
                 'title': video[1],     # title
                 'filename': video[2],  # filename
                 's3_url': s3_url,      # generated URL
-                'upload_date': video[4] # upload_date at index 4 (this was the bug!)
+                'upload_date': video[4] # upload_date at index 4
             })
         
         return jsonify(video_list)
@@ -120,6 +144,7 @@ def get_videos():
     except Exception as e:
         print(f"Error in /videos: {e}")
         return jsonify([])  # Return empty array instead of crashing
+
 @app.route('/sitemap.xml')
 def sitemap():
     sitemap_xml = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -140,9 +165,66 @@ Allow: /
 Sitemap: https://tawa-streaming.onrender.com/sitemap.xml'''
     return robots_txt, 200, {'Content-Type': 'text/plain'}
 
+# Admin route for private uploads
+@app.route('/admin')
+def admin_panel():
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>TAWA Admin</title>
+        <style>
+            body { background: #0F172A; color: white; font-family: Arial; padding: 2rem; }
+            .admin-form { background: #1E293B; padding: 2rem; border-radius: 10px; max-width: 500px; }
+            input, button { padding: 0.8rem; margin: 0.5rem 0; width: 100%; border-radius: 5px; border: 1px solid #334155; }
+            button { background: #3B82F6; color: white; border: none; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h1>🎬 TAWA Admin Panel</h1>
+        <div class="admin-form">
+            <h3>Upload New Video</h3>
+            <form id="uploadForm">
+                <input type="text" id="videoTitle" placeholder="Video Title" required>
+                <input type="file" id="videoFile" accept="video/*" required>
+                <button type="submit">Upload Video</button>
+            </form>
+            <div id="message" style="margin-top: 1rem;"></div>
+        </div>
+        
+        <script>
+            document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData();
+                formData.append('title', document.getElementById('videoTitle').value);
+                formData.append('video', document.getElementById('videoFile').files[0]);
+                
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    document.getElementById('message').innerHTML = 
+                        response.ok ? 
+                        '✅ ' + result.message : 
+                        '❌ ' + result.error;
+                        
+                    if (response.ok) {
+                        document.getElementById('uploadForm').reset();
+                    }
+                } catch (error) {
+                    document.getElementById('message').innerHTML = '❌ Upload failed';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    '''
+
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-
-
