@@ -120,9 +120,29 @@ def get_videos():
     except Exception as e:
         print(f"Error in /videos: {e}")
         return jsonify([])  # Return empty array instead of crashing
+@app.route('/sitemap.xml')
+def sitemap():
+    sitemap_xml = '''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://tawa-streaming.onrender.com/</loc>
+    <lastmod>2023-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>'''
+    return sitemap_xml, 200, {'Content-Type': 'application/xml'}
+
+@app.route('/robots.txt')
+def robots():
+    robots_txt = '''User-agent: *
+Allow: /
+Sitemap: https://tawa-streaming.onrender.com/sitemap.xml'''
+    return robots_txt, 200, {'Content-Type': 'text/plain'}
 
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
 
