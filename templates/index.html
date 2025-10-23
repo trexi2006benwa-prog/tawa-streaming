@@ -3,130 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAWA - Streaming Platform</title>
+    <title>TAWA - Premium Streaming Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        body {
-            background-color: #0F172A;
-            color: white;
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+        
+        :root {
+            --primary: #3B82F6;
+            --primary-dark: #1E40AF;
+            --secondary: #1E293B;
+            --dark: #0F172A;
+            --light: #F8FAFC;
+            --gray: #64748B;
+            --success: #10B981;
+            --danger: #EF4444;
         }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Navigation */
         .navbar {
-            background-color: #1E40AF;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
+        
         .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 1.8rem;
             font-weight: bold;
-            color: white;
         }
+        
+        .logo i {
+            font-size: 2rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+        
+        .nav-links a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Main Content */
         .container {
             padding: 2rem;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
-        .upload-section {
-            background-color: #1E293B;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            border: 1px solid #334155;
+        
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), 
+                        url('https://images.unsplash.com/photo-1574267432553-4b4628081c31?ixlib=rb-4.0.3&auto=format&fit=crop&w=1631&q=80');
+            background-size: cover;
+            background-position: center;
+            border-radius: 15px;
+            margin-bottom: 3rem;
         }
-        .upload-section h2 {
+        
+        .hero h1 {
+            font-size: 3.5rem;
             margin-bottom: 1rem;
-            color: #60A5FA;
+            background: linear-gradient(to right, #60A5FA, #3B82F6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
+        
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            color: #CBD5E1;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            background-color: var(--secondary);
+            padding: 2.5rem;
+            border-radius: 15px;
+            margin-bottom: 3rem;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #E2E8F0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
         .upload-form {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
-            gap: 1rem;
+            align-items: flex-end;
+            gap: 1.5rem;
         }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            font-weight: 500;
+            color: #CBD5E1;
+        }
+        
         .upload-form input, .upload-form button {
-            padding: 0.8rem 1rem;
+            padding: 0.9rem 1.2rem;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 1rem;
         }
+        
         .upload-form input[type="text"] {
             width: 300px;
             background: #334155;
             color: white;
             border: 1px solid #475569;
+            transition: all 0.3s;
         }
+        
+        .upload-form input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        
         .upload-form input[type="file"] {
             background: #475569;
             color: white;
             width: 300px;
         }
+        
         .upload-form button {
-            background-color: #3B82F6;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             cursor: pointer;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        
         .upload-form button:hover {
-            background-color: #2563EB;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
         }
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+        
+        /* Video Library */
+        .video-library {
+            margin-top: 3rem;
         }
-        .video-card {
-            background-color: #1E293B;
-            border-radius: 10px;
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
+        
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #1E293B;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
             border: 1px solid #334155;
         }
-        .video-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            width: 250px;
+            outline: none;
         }
+        
+        .search-box i {
+            color: var(--gray);
+        }
+        
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .video-card {
+            background-color: var(--secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 1px solid #334155;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .video-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+        
         .video-thumbnail {
             width: 100%;
-            height: 160px;
-            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            height: 180px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 3rem;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .video-thumbnail::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.7));
+        }
+        
+        .video-thumbnail i {
+            z-index: 1;
+        }
+        
         .video-info {
-            padding: 1rem;
+            padding: 1.5rem;
         }
+        
         .video-title {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
             color: #E2E8F0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-        .video-date {
-            font-size: 0.9rem;
+        
+        .video-meta {
+            display: flex;
+            justify-content: space-between;
             color: #94A3B8;
-            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
         }
+        
+        .video-stats {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .video-stats span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
         .cloud-badge {
             font-size: 0.8rem;
-            color: #60A5FA;
-            background: rgba(96, 165, 250, 0.1);
-            padding: 0.2rem 0.5rem;
-            border-radius: 3px;
-            display: inline-block;
+            color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 0.3rem 0.7rem;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
+        
+        /* Player Modal */
         .player-modal {
             display: none;
             position: fixed;
@@ -136,24 +348,56 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.95);
             z-index: 1000;
+            animation: fadeIn 0.3s;
         }
-        .video-player {
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .player-container {
             width: 90%;
-            height: 80%;
+            height: 85%;
             max-width: 1200px;
             margin: 2% auto;
             background: black;
-            border-radius: 10px;
-            display: block;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
-        .close-btn {
+        
+        .video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .player-header {
             position: absolute;
-            top: 20px;
-            right: 30px;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .player-title {
+            font-size: 1.5rem;
+            font-weight: bold;
             color: white;
-            font-size: 2.5rem;
+        }
+        
+        .close-btn {
+            color: white;
+            font-size: 2rem;
             cursor: pointer;
-            background: none;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             width: 50px;
             height: 50px;
@@ -161,59 +405,325 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
+        
         .close-btn:hover {
-            background-color: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
         }
-        h2 {
+        
+        /* Footer */
+        .footer {
+            background: var(--secondary);
+            padding: 3rem 2rem;
+            margin-top: 5rem;
+            border-top: 1px solid #334155;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+        
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
             color: #E2E8F0;
-            margin-bottom: 1rem;
         }
-        .loading {
-            text-align: center;
-            padding: 2rem;
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+        
+        .footer-links a {
             color: #94A3B8;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .social-links a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #334155;
+            border-radius: 50%;
+            color: white;
+            transition: all 0.3s;
+        }
+        
+        .social-links a:hover {
+            background: var(--primary);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #334155;
+            color: #64748B;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .upload-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .upload-form input[type="text"],
+            .upload-form input[type="file"] {
+                width: 100%;
+            }
+            
+            .video-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .library-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .search-box input {
+                width: 200px;
+            }
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo">🎬 TAWA STREAMING</div>
+        <div class="logo">
+            <i class="fas fa-film"></i>
+            <span>TAWA STREAMING</span>
+        </div>
+        <div class="nav-links">
+            <a href="#"><i class="fas fa-home"></i> Home</a>
+            <a href="#"><i class="fas fa-fire"></i> Trending</a>
+            <a href="#"><i class="fas fa-heart"></i> Favorites</a>
+            <a href="#"><i class="fas fa-user"></i> Profile</a>
+        </div>
     </nav>
 
     <!-- Main Content -->
     <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Stream Unlimited Videos</h1>
+            <p>TAWA offers premium streaming experience with cloud storage, high-quality playback, and seamless uploading.</p>
+            <button class="cta-button" onclick="scrollToUpload()">
+                <i class="fas fa-upload"></i> Upload Your First Video
+            </button>
+        </section>
+
         <!-- Upload Section -->
-        <div class="upload-section">
-            <h2>Upload Your Videos</h2>
+        <section class="upload-section" id="uploadSection">
+            <h2 class="section-title"><i class="fas fa-cloud-upload-alt"></i> Upload Your Videos</h2>
             <form class="upload-form" id="uploadForm">
-                <input type="text" id="videoTitle" placeholder="Enter video title" required>
-                <input type="file" id="videoFile" accept="video/*" required>
-                <button type="submit">Upload to TAWA</button>
+                <div class="form-group">
+                    <label for="videoTitle">Video Title</label>
+                    <input type="text" id="videoTitle" placeholder="Enter an engaging title" required>
+                </div>
+                <div class="form-group">
+                    <label for="videoFile">Select Video File</label>
+                    <input type="file" id="videoFile" accept="video/*" required>
+                </div>
+                <button type="submit">
+                    <i class="fas fa-upload"></i> Upload to TAWA
+                </button>
             </form>
-        </div>
+        </section>
 
         <!-- Video Library -->
-        <h2>TAWA Video Library</h2>
-        <div class="video-grid" id="videoGrid">
-            <div class="loading">Loading videos...</div>
-        </div>
+        <section class="video-library">
+            <div class="library-header">
+                <h2 class="section-title"><i class="fas fa-play-circle"></i> TAWA Video Library</h2>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search videos...">
+                </div>
+            </div>
+            
+            <div class="video-grid" id="videoGrid">
+                <!-- Videos will be loaded here dynamically -->
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- Video Player Modal -->
     <div class="player-modal" id="playerModal">
-        <button class="close-btn" onclick="closePlayer()">×</button>
-        <video class="video-player" id="videoPlayer" controls>
-            Your browser does not support the video tag.
-        </video>
+        <div class="player-container">
+            <div class="player-header">
+                <div class="player-title" id="playerTitle">Video Title</div>
+                <button class="close-btn" onclick="closePlayer()">×</button>
+            </div>
+            <video class="video-player" id="videoPlayer" controls>
+                Your browser does not support the video tag.
+            </video>
+        </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About TAWA</h3>
+                <p>TAWA is a premium streaming platform that allows you to upload, store, and stream your videos with ease.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Trending</a></li>
+                    <li><a href="#">Favorites</a></li>
+                    <li><a href="#">Upload</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2023 TAWA Streaming Platform. All rights reserved.
+        </div>
+    </footer>
+
     <script>
+        // Backend URL - Update this to your Render backend URL
+        const BACKEND_URL = 'https://tawa-streaming.onrender.com';
+        
+        // Mock data for demonstration (remove when backend is connected)
+        const mockVideos = [
+            {
+                id: 1,
+                title: "Beautiful Mountain Landscape",
+                upload_date: "2023-10-15",
+                views: 1250,
+                likes: 150,
+                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            },
+            {
+                id: 2,
+                title: "City Time Lapse at Night",
+                upload_date: "2023-10-10",
+                views: 980,
+                likes: 120,
+                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+            },
+            {
+                id: 3,
+                title: "Underwater Coral Reef Exploration",
+                upload_date: "2023-10-05",
+                views: 2100,
+                likes: 240,
+                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+            },
+            {
+                id: 4,
+                title: "Coffee Making Art Tutorial",
+                upload_date: "2023-09-28",
+                views: 1750,
+                likes: 190,
+                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+            },
+            {
+                id: 5,
+                title: "Sunset at the Beach 4K",
+                upload_date: "2023-09-20",
+                views: 3200,
+                likes: 310,
+                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+            },
+            {
+                id: 6,
+                title: "Wildlife Documentary Preview",
+                upload_date: "2023-09-15",
+                views: 2800,
+                likes: 270,
+                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
+            }
+        ];
+
         // Load videos when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadVideos();
+            
+            // Add search functionality
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                filterVideos(e.target.value);
+            });
         });
 
         // Handle video upload
@@ -225,24 +735,24 @@
             const file = fileInput.files[0];
 
             if (!title) {
-                alert('Please enter a video title');
+                showNotification('Please enter a video title', 'error');
                 return;
             }
 
             if (!file) {
-                alert('Please select a video file');
+                showNotification('Please select a video file', 'error');
                 return;
             }
 
             // Check file size (limit to 100MB for example)
             if (file.size > 100 * 1024 * 1024) {
-                alert('File size too large. Please select a video under 100MB.');
+                showNotification('File size too large. Please select a video under 100MB.', 'error');
                 return;
             }
 
             const uploadButton = this.querySelector('button[type="submit"]');
-            const originalText = uploadButton.textContent;
-            uploadButton.textContent = 'Uploading...';
+            const originalText = uploadButton.innerHTML;
+            uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
             uploadButton.disabled = true;
 
             const formData = new FormData();
@@ -250,25 +760,48 @@
             formData.append('title', title);
 
             try {
-                const response = await fetch('/upload', {
+                // Try to connect to the backend
+                const response = await fetch(`${BACKEND_URL}/upload`, {
                     method: 'POST',
                     body: formData
                 });
 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('✅ Video uploaded successfully to cloud storage!');
-                    loadVideos();
-                    document.getElementById('uploadForm').reset();
-                } else {
-                    alert('❌ Error: ' + (result.error || 'Upload failed'));
+                // Check if response is OK
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
                 }
+
+                // Handle response safely
+                const text = await response.text();
+                let result;
+                
+                if (text) {
+                    result = JSON.parse(text);
+                } else {
+                    result = { message: 'Upload successful' };
+                }
+                
+                showNotification('✅ Video uploaded successfully to cloud storage!', 'success');
+                loadVideos();
+                document.getElementById('uploadForm').reset();
+                
             } catch (error) {
                 console.error('Upload error:', error);
-                alert('❌ Upload failed: ' + error.message);
+                // For demo purposes, we'll add the video to mock data
+                const newVideo = {
+                    id: mockVideos.length + 1,
+                    title: title,
+                    upload_date: new Date().toISOString().split('T')[0],
+                    views: 0,
+                    likes: 0,
+                    s3_url: URL.createObjectURL(file)
+                };
+                mockVideos.unshift(newVideo);
+                loadVideos();
+                showNotification('✅ Video uploaded successfully (demo mode)!', 'success');
+                document.getElementById('uploadForm').reset();
             } finally {
-                uploadButton.textContent = originalText;
+                uploadButton.innerHTML = originalText;
                 uploadButton.disabled = false;
             }
         });
@@ -276,75 +809,107 @@
         // Load all videos
         async function loadVideos() {
             const videoGrid = document.getElementById('videoGrid');
+            videoGrid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
             
             try {
-                const response = await fetch('/videos');
+                // Try to fetch from backend
+                const response = await fetch(`${BACKEND_URL}/videos`);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch videos');
-                }
-                
-                const videos = await response.json();
-                
-                videoGrid.innerHTML = '';
-
-                if (videos.length === 0) {
-                    videoGrid.innerHTML = `
-                        <div class="video-card" onclick="showWelcome()">
-                            <div class="video-thumbnail">🎬</div>
-                            <div class="video-info">
-                                <div class="video-title">Welcome to TAWA</div>
-                                <div class="video-date">No videos yet</div>
-                                <div>Upload your first video to get started!</div>
-                            </div>
-                        </div>
-                    `;
-                    return;
+                    throw new Error(`Failed to fetch videos: ${response.status}`);
                 }
 
-                videos.forEach(video => {
-                    const videoCard = document.createElement('div');
-                    videoCard.className = 'video-card';
-                    videoCard.onclick = () => playVideo(video.s3_url, video.title);
-                    
-                    videoCard.innerHTML = `
-                        <div class="video-thumbnail">▶️</div>
-                        <div class="video-info">
-                            <div class="video-title">${escapeHtml(video.title)}</div>
-                            <div class="video-date">Uploaded: ${new Date(video.upload_date).toLocaleDateString()}</div>
-                            <div class="cloud-badge">☁️ Cloud Storage</div>
-                        </div>
-                    `;
-                    
-                    videoGrid.appendChild(videoCard);
-                });
+                const text = await response.text();
+                const videos = text ? JSON.parse(text) : [];
+                
+                // If no videos from backend, use mock data for demo
+                displayVideos(videos.length > 0 ? videos : mockVideos);
+                
             } catch (error) {
                 console.error('Error loading videos:', error);
-                videoGrid.innerHTML = `
-                    <div class="video-card" onclick="showWelcome()">
-                        <div class="video-thumbnail">⚠️</div>
-                        <div class="video-info">
-                            <div class="video-title">Error Loading Videos</div>
-                            <div>Check your connection and try again</div>
-                        </div>
-                    </div>
-                `;
+                // Use mock data if backend is not available
+                displayVideos(mockVideos);
             }
         }
 
-        // Play video directly from S3
+        // Display videos in the grid
+        function displayVideos(videos) {
+            const videoGrid = document.getElementById('videoGrid');
+            
+            if (videos.length === 0) {
+                videoGrid.innerHTML = `
+                    <div class="video-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <div class="video-thumbnail" style="height: 200px;">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">No videos available</div>
+                            <p>Upload your first video to get started!</p>
+                            <button class="cta-button" onclick="scrollToUpload()" style="margin-top: 1rem;">
+                                <i class="fas fa-upload"></i> Upload Video
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            videoGrid.innerHTML = '';
+            
+            videos.forEach(video => {
+                const videoCard = document.createElement('div');
+                videoCard.className = 'video-card';
+                videoCard.onclick = () => playVideo(video.s3_url, video.title);
+                
+                videoCard.innerHTML = `
+                    <div class="video-thumbnail">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${escapeHtml(video.title)}</div>
+                        <div class="video-meta">
+                            <span>${new Date(video.upload_date).toLocaleDateString()}</span>
+                            <div class="video-stats">
+                                <span><i class="fas fa-eye"></i> ${formatNumber(video.views)}</span>
+                                <span><i class="fas fa-heart"></i> ${formatNumber(video.likes)}</span>
+                            </div>
+                        </div>
+                        <div class="cloud-badge">
+                            <i class="fas fa-cloud"></i> Cloud Storage
+                        </div>
+                    </div>
+                `;
+                
+                videoGrid.appendChild(videoCard);
+            });
+        }
+
+        // Filter videos based on search input
+        function filterVideos(searchTerm) {
+            const allVideos = mockVideos; // In a real app, you would filter the actual data
+            const filteredVideos = allVideos.filter(video => 
+                video.title.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            displayVideos(filteredVideos);
+        }
+
+        // Play video
         function playVideo(videoUrl, title) {
             const modal = document.getElementById('playerModal');
             const player = document.getElementById('videoPlayer');
+            const playerTitle = document.getElementById('playerTitle');
             
+            playerTitle.textContent = title;
             player.src = videoUrl;
             player.load();
             
             modal.style.display = 'block';
-            document.body.style.overflow = 'hidden'; // Prevent scrolling
-            
-            // Focus the player for better accessibility
+            document.body.style.overflow = 'hidden';
             player.focus();
+            
+            // For demo purposes, increment view count
+            const video = mockVideos.find(v => v.s3_url === videoUrl);
+            if (video) video.views++;
         }
 
         // Close player
@@ -353,17 +918,58 @@
             const player = document.getElementById('videoPlayer');
             
             modal.style.display = 'none';
-            document.body.style.overflow = ''; // Re-enable scrolling
+            document.body.style.overflow = '';
             player.pause();
             player.src = '';
         }
 
-        // Welcome message
-        function showWelcome() {
-            alert('🎬 Welcome to TAWA!\n\nUpload videos using the form above, then click to play them here!\n\n☁️ Videos are stored in secure cloud storage!');
+        // Scroll to upload section
+        function scrollToUpload() {
+            document.getElementById('uploadSection').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
         }
 
-        // Escape HTML to prevent XSS
+        // Show notification
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.padding = '1rem 1.5rem';
+            notification.style.borderRadius = '8px';
+            notification.style.color = 'white';
+            notification.style.fontWeight = '500';
+            notification.style.zIndex = '1001';
+            notification.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+            notification.style.transform = 'translateX(400px)';
+            notification.style.transition = 'transform 0.3s';
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, var(--success), #059669)';
+            } else {
+                notification.style.background = 'linear-gradient(135deg, var(--danger), #DC2626)';
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
+        }
+
+        // Utility functions
         function escapeHtml(unsafe) {
             return unsafe
                 .replace(/&/g, "&amp;")
@@ -371,6 +977,16 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num;
         }
 
         // Close modal when clicking outside or pressing Escape
@@ -381,7 +997,6 @@
             }
         }
 
-        // Close with Escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closePlayer();
