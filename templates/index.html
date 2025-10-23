@@ -14,6 +14,7 @@
             background-color: #0F172A;
             color: white;
             font-family: Arial, sans-serif;
+            line-height: 1.6;
         }
         .navbar {
             background-color: #1E40AF;
@@ -21,10 +22,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         .logo {
             font-size: 1.8rem;
             font-weight: bold;
+            color: white;
         }
         .container {
             padding: 2rem;
@@ -36,10 +39,20 @@
             padding: 2rem;
             border-radius: 10px;
             margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        .upload-section h2 {
+            margin-bottom: 1rem;
+            color: #60A5FA;
+        }
+        .upload-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
         }
         .upload-form input, .upload-form button {
             padding: 0.8rem 1rem;
-            margin: 0.5rem;
             border: none;
             border-radius: 5px;
             font-size: 1rem;
@@ -48,16 +61,19 @@
             width: 300px;
             background: #334155;
             color: white;
+            border: 1px solid #475569;
         }
         .upload-form input[type="file"] {
             background: #475569;
             color: white;
+            width: 300px;
         }
         .upload-form button {
             background-color: #3B82F6;
             color: white;
             cursor: pointer;
             font-weight: bold;
+            transition: background-color 0.3s;
         }
         .upload-form button:hover {
             background-color: #2563EB;
@@ -72,11 +88,13 @@
             background-color: #1E293B;
             border-radius: 10px;
             overflow: hidden;
-            transition: transform 0.3s;
+            transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
+            border: 1px solid #334155;
         }
         .video-card:hover {
-            transform: scale(1.05);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
         .video-thumbnail {
             width: 100%;
@@ -94,6 +112,20 @@
             font-size: 1.1rem;
             font-weight: bold;
             margin-bottom: 0.5rem;
+            color: #E2E8F0;
+        }
+        .video-date {
+            font-size: 0.9rem;
+            color: #94A3B8;
+            margin-bottom: 0.5rem;
+        }
+        .cloud-badge {
+            font-size: 0.8rem;
+            color: #60A5FA;
+            background: rgba(96, 165, 250, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            display: inline-block;
         }
         .player-modal {
             display: none;
@@ -108,18 +140,40 @@
         .video-player {
             width: 90%;
             height: 80%;
+            max-width: 1200px;
             margin: 2% auto;
             background: black;
+            border-radius: 10px;
+            display: block;
         }
         .close-btn {
             position: absolute;
             top: 20px;
             right: 30px;
             color: white;
-            font-size: 2rem;
+            font-size: 2.5rem;
             cursor: pointer;
             background: none;
             border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+        .close-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        h2 {
+            color: #E2E8F0;
+            margin-bottom: 1rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #94A3B8;
         }
     </style>
 </head>
@@ -144,25 +198,52 @@
         <!-- Video Library -->
         <h2>TAWA Video Library</h2>
         <div class="video-grid" id="videoGrid">
-            <div class="video-card" onclick="showWelcome()">
-                <div class="video-thumbnail">🎥</div>
-                <div class="video-info">
-                    <script>
+            <div class="loading">Loading videos...</div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="player-modal" id="playerModal">
+        <button class="close-btn" onclick="closePlayer()">×</button>
+        <video class="video-player" id="videoPlayer" controls>
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <script>
         // Load videos when page loads
-        document.addEventListener('DOMContentLoaded', loadVideos);
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos();
+        });
 
         // Handle video upload
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const title = document.getElementById('videoTitle').value;
+            const title = document.getElementById('videoTitle').value.trim();
             const fileInput = document.getElementById('videoFile');
             const file = fileInput.files[0];
+
+            if (!title) {
+                alert('Please enter a video title');
+                return;
+            }
 
             if (!file) {
                 alert('Please select a video file');
                 return;
             }
+
+            // Check file size (limit to 100MB for example)
+            if (file.size > 100 * 1024 * 1024) {
+                alert('File size too large. Please select a video under 100MB.');
+                return;
+            }
+
+            const uploadButton = this.querySelector('button[type="submit"]');
+            const originalText = uploadButton.textContent;
+            uploadButton.textContent = 'Uploading...';
+            uploadButton.disabled = true;
 
             const formData = new FormData();
             formData.append('video', file);
@@ -181,20 +262,30 @@
                     loadVideos();
                     document.getElementById('uploadForm').reset();
                 } else {
-                    alert('❌ Error: ' + result.error);
+                    alert('❌ Error: ' + (result.error || 'Upload failed'));
                 }
             } catch (error) {
-                alert('❌ Upload failed: ' + error);
+                console.error('Upload error:', error);
+                alert('❌ Upload failed: ' + error.message);
+            } finally {
+                uploadButton.textContent = originalText;
+                uploadButton.disabled = false;
             }
         });
 
         // Load all videos
         async function loadVideos() {
+            const videoGrid = document.getElementById('videoGrid');
+            
             try {
                 const response = await fetch('/videos');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch videos');
+                }
+                
                 const videos = await response.json();
                 
-                const videoGrid = document.getElementById('videoGrid');
                 videoGrid.innerHTML = '';
 
                 if (videos.length === 0) {
@@ -202,8 +293,9 @@
                         <div class="video-card" onclick="showWelcome()">
                             <div class="video-thumbnail">🎬</div>
                             <div class="video-info">
-                                <div class="video-title">No videos yet</div>
-                                <div>Upload your first video above!</div>
+                                <div class="video-title">Welcome to TAWA</div>
+                                <div class="video-date">No videos yet</div>
+                                <div>Upload your first video to get started!</div>
                             </div>
                         </div>
                     `;
@@ -218,9 +310,9 @@
                     videoCard.innerHTML = `
                         <div class="video-thumbnail">▶️</div>
                         <div class="video-info">
-                            <div class="video-title">${video.title}</div>
-                            <div>Uploaded: ${new Date(video.upload_date).toLocaleDateString()}</div>
-                            <div style="font-size: 12px; color: #60A5FA;">☁️ Cloud Storage</div>
+                            <div class="video-title">${escapeHtml(video.title)}</div>
+                            <div class="video-date">Uploaded: ${new Date(video.upload_date).toLocaleDateString()}</div>
+                            <div class="cloud-badge">☁️ Cloud Storage</div>
                         </div>
                     `;
                     
@@ -228,6 +320,15 @@
                 });
             } catch (error) {
                 console.error('Error loading videos:', error);
+                videoGrid.innerHTML = `
+                    <div class="video-card" onclick="showWelcome()">
+                        <div class="video-thumbnail">⚠️</div>
+                        <div class="video-info">
+                            <div class="video-title">Error Loading Videos</div>
+                            <div>Check your connection and try again</div>
+                        </div>
+                    </div>
+                `;
             }
         }
 
@@ -240,7 +341,10 @@
             player.load();
             
             modal.style.display = 'block';
-            player.play();
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+            
+            // Focus the player for better accessibility
+            player.focus();
         }
 
         // Close player
@@ -249,20 +353,40 @@
             const player = document.getElementById('videoPlayer');
             
             modal.style.display = 'none';
+            document.body.style.overflow = ''; // Re-enable scrolling
             player.pause();
             player.src = '';
         }
 
         // Welcome message
         function showWelcome() {
-            alert('🎬 Welcome to TAWA!\n\nUpload videos using the form above, then click to play them here!\n\n☁️ Videos now stored in secure cloud storage!');
+            alert('🎬 Welcome to TAWA!\n\nUpload videos using the form above, then click to play them here!\n\n☁️ Videos are stored in secure cloud storage!');
         }
 
-        // Close modal when clicking outside
+        // Escape HTML to prevent XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Close modal when clicking outside or pressing Escape
         window.onclick = function(event) {
             const modal = document.getElementById('playerModal');
             if (event.target === modal) {
                 closePlayer();
             }
         }
+
+        // Close with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closePlayer();
+            }
+        });
     </script>
+</body>
+</html>
