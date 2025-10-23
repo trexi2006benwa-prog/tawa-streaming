@@ -35,7 +35,7 @@ def init_db():
     conn.close()
 
 def allowed_file(filename):
-    allowed_extensions = {'mp4', 'avi', 'mov', 'mkv'}
+    allowed_extensions = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
@@ -66,7 +66,7 @@ def upload_video():
                     file,
                     AWS_BUCKET_NAME,
                     s3_key,
-                    ExtraArgs={'ACL': 'public-read'}
+                    ExtraArgs={'ACL': 'public-read', 'ContentType': 'video/mp4'}
                 )
             except ClientError as e:
                 return jsonify({'error': f'S3 upload failed: {str(e)}'}), 500
@@ -79,40 +79,50 @@ def upload_video():
             conn.commit()
             conn.close()
             
-            return jsonify({'message': 'Video uploaded successfully to cloud!', 'filename': filename})
+            # Generate the S3 URL for the response
+            s3_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
+            
+            return jsonify({
+                'message': 'Video uploaded successfully to cloud!', 
+                'filename': filename,
+                's3_url': s3_url
+            })
         else:
-            return jsonify({'error': 'File type not allowed'}), 400
+            return jsonify({'error': 'File type not allowed. Please use MP4, AVI, MOV, MKV, or WEBM.'}), 400
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/videos')
 def get_videos():
-    conn = sqlite3.connect('tawa.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM videos")
-    videos = c.fetchall()
-    conn.close()
-    
-    video_list = []
-    for video in videos:
-        # Generate S3 URL for each video
-        s3_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{video[3]}"
+    try:
+        conn = sqlite3.connect('tawa.db')
+        c = conn.cursor()
+        c.execute("SELECT id, title, filename, s3_key, upload_date FROM videos ORDER BY upload_date DESC")
+        videos = c.fetchall()
+        conn.close()
         
-        video_list.append({
-            'id': video[0],
-            'title': video[1],
-            'filename': video[2],
-            's3_url': s3_url,
-            'upload_date': video[4]
-        })
+        video_list = []
+        for video in videos:
+            # Generate S3 URL for each video
+            s3_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{video[3]}"  # s3_key is at index 3
+            
+            video_list.append({
+                'id': video[0],        # id
+                'title': video[1],     # title
+                'filename': video[2],  # filename
+                's3_url': s3_url,      # generated URL
+                'upload_date': video[4] # upload_date at index 4 (this was the bug!)
+            })
+        
+        return jsonify(video_list)
     
-    return jsonify(video_list)
+    except Exception as e:
+        print(f"Error in /videos: {e}")
+        return jsonify([])  # Return empty array instead of crashing
 
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
-    print("🎬 TAWA Streaming Platform Starting...")
-    print("☁️  Using AWS S3 Cloud Storage")
-    print("🌐 Server running!")
     app.run(host='0.0.0.0', port=port)
+
