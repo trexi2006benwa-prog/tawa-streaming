@@ -87,18 +87,32 @@ def home():
 @app.route('/upload', methods=['POST'])
 def upload_video():
     try:
+        print("=== UPLOAD DEBUG START ===")
+        print("AWS_BUCKET_NAME:", AWS_BUCKET_NAME)
+        print("AWS_REGION:", AWS_REGION)
+        
         if 'video' not in request.files:
+            print("❌ No video file in request")
             return jsonify({'error': 'No video file'}), 400
         
         file = request.files['video']
         title = request.form.get('title', 'Untitled')
+        category = request.form.get('category', 'General')
+        
+        print("📁 File info:", file.filename, "Size:", len(file.read()) if file else 0)
+        file.seek(0)  # Reset file pointer
         
         if file.filename == '':
+            print("❌ Empty filename")
             return jsonify({'error': 'No selected file'}), 400
         
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             s3_key = f"videos/{filename}"
+            
+            print("📤 Uploading to S3...")
+            print("📦 Bucket:", AWS_BUCKET_NAME)
+            print("📍 Key:", s3_key)
             
             # Upload to S3
             try:
@@ -108,30 +122,39 @@ def upload_video():
                     s3_key,
                     ExtraArgs={'ACL': 'public-read', 'ContentType': 'video/mp4'}
                 )
+                print("✅ S3 upload successful!")
             except ClientError as e:
+                print("❌ S3 upload failed:", str(e))
                 return jsonify({'error': f'S3 upload failed: {str(e)}'}), 500
             
             # Save to database
             conn = sqlite3.connect('tawa.db')
             c = conn.cursor()
-            c.execute("INSERT INTO videos (title, filename, s3_key) VALUES (?, ?, ?)", 
-                     (title, filename, s3_key))
+            c.execute("INSERT INTO videos (title, filename, s3_key, category) VALUES (?, ?, ?, ?)", 
+                     (title, filename, s3_key, category))
             conn.commit()
             conn.close()
             
             # Generate the S3 URL for the response
             s3_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
+            print("🎉 Upload completed successfully!")
             
             return jsonify({
                 'message': 'Video uploaded successfully to cloud!', 
                 'filename': filename,
-                's3_url': s3_url
+                's3_url': s3_url,
+                'category': category
             })
         else:
+            print("❌ File type not allowed")
             return jsonify({'error': 'File type not allowed. Please use MP4, AVI, MOV, MKV, or WEBM.'}), 400
             
     except Exception as e:
+        print("💥 Unexpected error:", str(e))
         return jsonify({'error': str(e)}), 500
+    finally:
+        print("=== UPLOAD DEBUG END ===")
+    
 
 @app.route('/videos')
 def get_videos():
@@ -244,5 +267,6 @@ if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
