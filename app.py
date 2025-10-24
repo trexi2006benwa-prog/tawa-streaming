@@ -32,14 +32,19 @@ def fix_database():
         if 's3_key' not in columns:
             c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
             print("✅ Added missing s3_key column to existing database")
+        
+        if 'category' not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN category TEXT DEFAULT 'General'")
+            print("✅ Added category column to existing database")
         else:
-            print("✅ s3_key column already exists")
+            print("✅ All columns already exist")
             
     except Exception as e:
         print("Error checking/adding columns:", e)
     finally:
         conn.commit()
         conn.close()
+    
 
 # Initialize database
 def init_db():
@@ -215,7 +220,7 @@ def admin_panel():
         <style>
             body { background: #0F172A; color: white; font-family: Arial; padding: 2rem; }
             .admin-form { background: #1E293B; padding: 2rem; border-radius: 10px; max-width: 500px; }
-            input, button { padding: 0.8rem; margin: 0.5rem 0; width: 100%; border-radius: 5px; border: 1px solid #334155; }
+            input, button, select { padding: 0.8rem; margin: 0.5rem 0; width: 100%; border-radius: 5px; border: 1px solid #334155; }
             button { background: #3B82F6; color: white; border: none; cursor: pointer; }
         </style>
     </head>
@@ -225,6 +230,16 @@ def admin_panel():
             <h3>Upload New Video</h3>
             <form id="uploadForm">
                 <input type="text" id="videoTitle" placeholder="Video Title" required>
+                <select id="videoCategory" required>
+                    <option value="">Select Category</option>
+                    <option value="Trending">Trending</option>
+                    <option value="Movies">Movies</option>
+                    <option value="TV Shows">TV Shows</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="Documentary">Documentary</option>
+                    <option value="Nature">Nature</option>
+                    <option value="General">General</option>
+                </select>
                 <input type="file" id="videoFile" accept="video/*" required>
                 <button type="submit">Upload Video</button>
             </form>
@@ -237,6 +252,7 @@ def admin_panel():
                 
                 const formData = new FormData();
                 formData.append('title', document.getElementById('videoTitle').value);
+                formData.append('category', document.getElementById('videoCategory').value);
                 formData.append('video', document.getElementById('videoFile').files[0]);
                 
                 try {
@@ -255,7 +271,7 @@ def admin_panel():
                         document.getElementById('uploadForm').reset();
                     }
                 } catch (error) {
-                    document.getElementById('message').innerHTML = '❌ Upload failed';
+                    document.getElementById('message').innerHTML = '❌ Upload failed: ' + error;
                 }
             });
         </script>
@@ -267,6 +283,7 @@ if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
