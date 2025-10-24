@@ -9,7 +9,8 @@ app = Flask(__name__)
 
 # AWS S3 Configuration
 AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME', 'tawa-streaming')
-AWS_REGION = 'af-south-1'  # Cape Town region
+AWS_REGION = 'eu-north-1'  # Stockholm region
+
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -243,4 +244,5 @@ if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
 
