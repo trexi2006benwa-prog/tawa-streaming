@@ -125,7 +125,7 @@ def upload_video():
                     file,
                     AWS_BUCKET_NAME,
                     s3_key,
-                    ExtraArgs={'ACL': 'public-read', 'ContentType': 'video/mp4'}
+                    ExtraArgs={'ContentType': 'video/mp4'}
                 )
                 print("✅ S3 upload successful!")
             except ClientError as e:
@@ -159,7 +159,6 @@ def upload_video():
         return jsonify({'error': str(e)}), 500
     finally:
         print("=== UPLOAD DEBUG END ===")
-    
 
 @app.route('/videos')
 def get_videos():
@@ -818,6 +817,7 @@ if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
