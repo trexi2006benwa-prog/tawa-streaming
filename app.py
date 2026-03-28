@@ -50,19 +50,27 @@ def fix_database():
 def init_db():
     conn = sqlite3.connect('tawa.db')
     c = conn.cursor()
+    # 1. Create the table if it's gone
     c.execute('''
         CREATE TABLE IF NOT EXISTS videos
         (id INTEGER PRIMARY KEY AUTOINCREMENT,
          title TEXT NOT NULL,
          filename TEXT NOT NULL,
-         s3_key TEXT NOT NULL,
          upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
     ''')
+    
+    # 2. This part checks for new columns automatically
+    c.execute("PRAGMA table_info(videos)")
+    columns = [column[1] for column in c.fetchall()]
+    
+    if 's3_key' not in columns:
+        c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
+    if 'category' not in columns:
+        c.execute("ALTER TABLE videos ADD COLUMN category TEXT DEFAULT 'General'")
+        
     conn.commit()
     conn.close()
-    
-    # Call the fix function
-    fix_database()
+init_db()
 
 def allowed_file(filename):
     allowed_extensions = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
