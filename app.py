@@ -85,6 +85,7 @@ def force_fix_db():
     
     return result
 # Routes
+init_db()
 @app.route('/')
 def home():
     return render_template('index.html')
