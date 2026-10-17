@@ -89,17 +89,14 @@
 <dialog id="authDlg" aria-labelledby="authHead">
   <button class="x" type="button" aria-label="Close" data-close="authDlg">&times;</button>
   <div class="step" id="s1">
-    <h2 id="authHead">Sign in with your phone</h2>
-    <p>No password. We text you a code.</p>
+    <h2 id="authHead">Sign in</h2>
+    <p>Enter your phone number and the code TAWA gave you.</p>
     <label for="phone" style="font-weight:500">Phone number</label>
     <div class="phone" style="margin-top:.4rem"><div class="cc">+260</div><input class="inp" id="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="97 123 4567"></div>
-    <button class="btn" style="width:100%" id="sendBtn" type="button">Send code</button>
-  </div>
-  <div class="step" id="s2">
-    <h2>Enter your code</h2>
-    <p id="codeHint">We texted you a 6-digit code.</p>
-    <input class="inp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" aria-label="6-digit code" style="text-align:center;letter-spacing:.4em;font-size:1.3rem;margin-bottom:.8rem">
-    <div class="stack"><button class="btn" id="verifyBtn" type="button">Sign in</button><button class="ghost" id="backBtn" type="button">Use a different number</button></div>
+    <label for="code" style="font-weight:500">Code</label>
+    <input class="inp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="margin:.4rem 0 .9rem;letter-spacing:.3em;font-size:1.2rem">
+    <div class="stack"><button class="btn" id="verifyBtn" type="button">Sign in</button><button class="ghost" id="textBtn" type="button" hidden>Text me a code</button></div>
+    <p style="margin:.9rem 0 0;font-size:.9rem">No code yet? Pay K15 and message TAWA. We will send you one.</p>
   </div>
   <div class="step" id="s3">
     <h2>Subscribe to watch</h2>
@@ -122,7 +119,7 @@
   const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows'];
   let me = { signed_in: false, subscribed: false, price: 15 };
   let library = [], live = { is_live: false };
-  let pendingPhone = '', lastSave = 0, hls = null;
+  let lastSave = 0, hls = null;
 
   /* ---------- helpers ---------- */
   const get = async (url) => { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; };
@@ -209,28 +206,26 @@
     if (step === 3 && !me.signed_in) step = 1;
     if (me.signed_in && step === 1) step = me.subscribed ? 0 : 3;
     if (!step) return;
-    ['s1', 's2', 's3'].forEach((s, i) => $(s).classList.toggle('on', i + 1 === step));
+    $('s1').classList.toggle('on', step === 1); $('s3').classList.toggle('on', step === 3);
     say('');
     const d = $('authDlg'); if (!d.open) d.showModal();
-    (step === 1 ? $('phone') : step === 2 ? $('code') : $('payBtn')).focus();
+    (step === 1 ? $('phone') : $('payBtn')).focus();
   }
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => {
     const d = $(b.dataset.close); d.close();
   }));
   $('playDlg').addEventListener('close', () => { $('player').pause(); if (hls) { hls.destroy(); hls = null; } $('player').removeAttribute('src'); });
 
-  $('sendBtn').onclick = async () => {
-    $('sendBtn').disabled = true; say('Sending your code…');
+  $('textBtn').onclick = async () => {
+    $('textBtn').disabled = true; say('Sending your code…');
     const { r, d } = await post('/auth/send-code', { phone: $('phone').value });
-    $('sendBtn').disabled = false;
+    $('textBtn').disabled = false;
     if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
-    pendingPhone = d.phone; $('codeHint').textContent = 'We texted a 6-digit code to ' + d.phone + '.';
-    openAuth(2);
+    say('We texted a 6-digit code to ' + d.phone + '.', 'ok'); $('code').focus();
   };
-  $('backBtn').onclick = () => openAuth(1);
   $('verifyBtn').onclick = async () => {
     $('verifyBtn').disabled = true;
-    const { r, d } = await post('/auth/verify', { phone: pendingPhone, code: $('code').value });
+    const { r, d } = await post('/auth/verify', { phone: $('phone').value, code: $('code').value });
     $('verifyBtn').disabled = false;
     if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
     me = d; renderAuth(); await refreshLive();
@@ -294,7 +289,7 @@
   /* ---------- boot ---------- */
   async function refreshLive() { live = (await get('/api/live')).d; renderRows(); }
   (async () => {
-    me = (await get('/me')).d; renderAuth();
+    me = (await get('/me')).d; renderAuth(); $('textBtn').hidden = !me.sms;
     library = (await get('/api/library')).d || [];
     live = (await get('/api/live')).d;
     renderRows();
