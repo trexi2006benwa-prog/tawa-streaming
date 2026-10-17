@@ -1,947 +1,305 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="google-site-verification" content="RCBD-YDk1VNhlk6c7NYrOdd5dFo37fOgP7bkaSczNuo" />
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAWA • Premium Streaming Platform</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #3B82F6;
-            --primary-dark: #1E40AF;
-            --secondary: #1E293B;
-            --dark: #0F172A;
-            --darker: #020617;
-            --light: #F8FAFC;
-            --gray: #64748B;
-            --success: #10B981;
-            --danger: #EF4444;
-            --warning: #F59E0B;
-            --glass: rgba(255, 255, 255, 0.1);
-            --glass-dark: rgba(0, 0, 0, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--darker);
-            color: var(--light);
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        /* Modern Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--dark);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 10px;
-        }
-
-        /* Navigation */
-        .navbar {
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, transparent 100%);
-            padding: 1.5rem 3rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            backdrop-filter: blur(20px);
-            transition: all 0.3s ease;
-        }
-
-        .navbar.scrolled {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), #60A5FA);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2.5rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--light);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .nav-links a:hover {
-            color: var(--primary);
-        }
-
-        .nav-actions {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            background: var(--glass);
-            border-radius: 25px;
-            padding: 0.5rem 1rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .search-box input {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 0.5rem;
-            width: 200px;
-            outline: none;
-            font-size: 1rem;
-        }
-
-        /* Hero Section */
-        .hero {
-            height: 80vh;
-            background: linear-gradient(rgba(2, 6, 23, 0.7), rgba(2, 6, 23, 0.9)), 
-                        url('https://images.unsplash.com/photo-1574267432553-4b4628081c31?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80');
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: center;
-            padding: 0 3rem;
-            position: relative;
-            margin-bottom: 3rem;
-        }
-
-        .hero-content {
-            max-width: 600px;
-            z-index: 2;
-        }
-
-        .hero-badge {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .hero-title {
-            font-size: 4rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #FFFFFF, #CBD5E1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-description {
-            font-size: 1.3rem;
-            color: #CBD5E1;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .hero-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
-        }
-
-        .btn-secondary {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* Content Sections */
-        .content-section {
-            padding: 0 3rem;
-            margin-bottom: 4rem;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .section-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .view-all {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        /* Video Grid */
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-        }
-
-        .video-card {
-            background: var(--secondary);
-            border-radius: 15px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-        }
-
-        .video-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            border-color: var(--primary);
-        }
-
-        .video-thumbnail {
-            width: 100%;
-            height: 160px;
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            position: relative;
-            overflow: hidden;
-        }
-
-        .video-thumbnail img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .video-card:hover .video-thumbnail img {
-            transform: scale(1.1);
-        }
-
-        .video-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.8));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .video-card:hover .video-overlay {
-            opacity: 1;
-        }
-
-        .play-button {
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--dark);
-            font-size: 1.5rem;
-            transform: scale(0.8);
-            transition: all 0.3s ease;
-        }
-
-        .video-card:hover .play-button {
-            transform: scale(1);
-        }
-
-        .video-info {
-            padding: 1.5rem;
-        }
-
-        .video-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: white;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .video-meta {
-            display: flex;
-            justify-content: space-between;
-            color: var(--gray);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .video-stats {
-            display: flex;
-            gap: 1rem;
-        }
-
-        /* Featured Row */
-        .featured-row {
-            display: flex;
-            gap: 2rem;
-            overflow-x: auto;
-            padding: 1rem 0;
-            scrollbar-width: none;
-        }
-
-        .featured-row::-webkit-scrollbar {
-            display: none;
-        }
-
-        .featured-card {
-            min-width: 300px;
-            background: var(--secondary);
-            border-radius: 15px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Player Modal */
-        .player-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 2000;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .player-container {
-            width: 95%;
-            height: 85%;
-            max-width: 1400px;
-            margin: 2% auto;
-            background: black;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-        }
-
-        .video-player {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .player-header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 2rem;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
-        }
-
-        .player-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
-        }
-
-        .player-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .player-btn {
-            width: 45px;
-            height: 45px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .close-btn {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .close-btn:hover {
-            background: rgba(239, 68, 68, 0.7);
-        }
-
-        /* Footer */
-        .footer {
-            background: var(--darker);
-            padding: 4rem 3rem 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 5rem;
-        }
-
-        .copyright {
-            text-align: center;
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: #64748B;
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 3rem;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(59, 130, 246, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 1rem;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .hero {
-                padding: 0 1rem;
-                height: 70vh;
-            }
-
-            .hero-title {
-                font-size: 2.5rem;
-            }
-
-            .content-section {
-                padding: 0 1rem;
-            }
-
-            .video-grid {
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                gap: 1.5rem;
-            }
-
-            .search-box input {
-                width: 150px;
-            }
-        }
-
-        /* Progress bar for continue watching */
-        .progress-bar {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 0.5rem;
-        }
-
-        .progress {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAWA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0F172A; --panel:#1E293B; --line:#2B3A52; --text:#F1F5F9; --muted:#94A3B8; --sky:#38BDF8; --copper:#E8A15B; --bad:#F87171; --ok:#34D399; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; min-height:100vh; }
+  button, input { font-family:inherit; }
+  a { color:inherit; text-decoration:none; }
+  :focus-visible { outline:2px solid var(--sky); outline-offset:2px; }
+  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:2rem; padding:0 clamp(1rem,4vw,3rem); height:72px; background:rgba(15,23,42,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+  .brand { display:flex; align-items:center; gap:.6rem; font-weight:800; font-size:1.4rem; letter-spacing:.04em; }
+  .mark { width:30px; height:30px; border-radius:9px; background:var(--sky); display:grid; place-items:center; }
+  .mark svg { width:12px; height:12px; margin-left:2px; fill:var(--bg); }
+  nav { display:flex; gap:1.4rem; flex:1; }
+  nav a { color:#CBD5E1; font-weight:500; padding:.5rem .2rem; }
+  nav a:hover { color:var(--sky); }
+  .btn { height:46px; padding:0 1.4rem; border:none; border-radius:10px; background:var(--sky); color:#06243A; font-weight:700; font-size:1rem; cursor:pointer; }
+  .btn:hover { background:#7DD3FC; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .ghost { height:46px; padding:0 1.2rem; border:1px solid #475569; border-radius:10px; background:transparent; color:var(--text); font-weight:500; font-size:.95rem; cursor:pointer; }
+  .ghost:hover { border-color:var(--sky); }
+  .link { background:none; border:none; color:var(--text); font-weight:500; font-size:1rem; cursor:pointer; padding:.5rem; }
+  main { padding:1.5rem clamp(1rem,4vw,3rem) 4rem; display:flex; flex-direction:column; gap:2rem; }
+  .hero { min-height:300px; border-radius:20px; position:relative; overflow:hidden; display:flex; align-items:flex-end; background:linear-gradient(110deg,#0C4A6E,#1E3A5F 55%,#7A4A22); }
+  .hero::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(15,23,42,.9),rgba(15,23,42,0) 70%); }
+  .hero-body { position:relative; padding:2rem; max-width:560px; }
+  .tag { display:inline-block; background:var(--copper); color:#2A1608; font-weight:700; font-size:.85rem; padding:.25rem .75rem; border-radius:999px; }
+  .hero h1 { font-size:clamp(1.8rem,5vw,2.8rem); font-weight:800; line-height:1.05; margin:.6rem 0 1rem; }
+  .row h2 { font-size:1.35rem; font-weight:700; margin-bottom:.7rem; }
+  .cards { display:flex; gap:.9rem; overflow-x:auto; padding-bottom:.6rem; scroll-snap-type:x proximity; }
+  .card { flex:none; width:220px; background:none; border:none; color:inherit; text-align:left; cursor:pointer; scroll-snap-align:start; }
+  .poster { width:220px; height:124px; border-radius:10px; position:relative; overflow:hidden; border:1px solid var(--line); display:flex; align-items:flex-end; padding:.6rem; font-weight:800; font-size:1.05rem; line-height:1.1; transition:transform .15s, border-color .15s; }
+  .card:hover .poster { transform:translateY(-3px); border-color:var(--sky); }
+  .cap { margin-top:.45rem; font-weight:500; font-size:.92rem; color:#CBD5E1; }
+  .live { position:absolute; left:8px; top:8px; display:flex; align-items:center; gap:6px; background:rgba(15,23,42,.88); padding:3px 10px; border-radius:999px; font-size:.8rem; font-weight:700; }
+  .live i { width:8px; height:8px; border-radius:50%; background:var(--bad); }
+  .bar { position:absolute; left:10px; right:10px; bottom:8px; height:4px; border-radius:4px; background:rgba(255,255,255,.25); }
+  .bar b { display:block; height:100%; border-radius:4px; background:var(--sky); }
+  .empty { color:var(--muted); padding:3rem 1rem; text-align:center; }
+  dialog { margin:auto; border:1px solid var(--line); border-radius:16px; background:var(--panel); color:var(--text); padding:1.6rem; width:min(480px,92vw); }
+  dialog::backdrop { background:rgba(2,6,23,.8); }
+  dialog.wide { width:min(960px,96vw); padding:1rem; }
+  dialog h2 { font-size:1.5rem; font-weight:800; margin-bottom:.3rem; }
+  dialog p { color:var(--muted); margin-bottom:1rem; }
+  .inp { height:48px; width:100%; padding:0 .9rem; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-size:1rem; }
+  .inp:focus { outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
+  .phone { display:flex; gap:.5rem; margin-bottom:.8rem; }
+  .cc { height:48px; padding:0 .9rem; display:flex; align-items:center; border-radius:10px; border:1px solid var(--line); background:var(--bg); }
+  .plan { margin:1rem 0; padding:1.1rem; border-radius:12px; border:1px solid rgba(56,189,248,.45); background:rgba(56,189,248,.07); display:flex; justify-content:space-between; align-items:baseline; gap:1rem; }
+  .plan strong { font-size:1.9rem; color:#7DD3FC; }
+  .plan small { color:var(--muted); font-size:.95rem; }
+  .msg { min-height:1.4rem; margin-top:.8rem; font-size:.95rem; }
+  .msg.err { color:#FCA5A5; } .msg.ok { color:#6EE7B7; }
+  .stack { display:flex; flex-direction:column; gap:.6rem; }
+  .step { display:none; } .step.on { display:block; }
+  .x { float:right; background:none; border:none; color:var(--muted); font-size:1.6rem; cursor:pointer; line-height:1; width:44px; height:44px; }
+  video { width:100%; max-height:76vh; border-radius:10px; background:#000; display:block; }
+  .ptitle { font-weight:700; padding:.2rem .3rem .7rem; }
+  @media (max-width:700px) { nav { display:none; } header { gap:1rem; } .brand { flex:1; } }
+</style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="logo">
-            <i class="fas fa-film"></i>
-            <span>TAWA</span>
-        </div>
-        
-        <div class="nav-links">
-            <a href="#" class="active"><i class="fas fa-home"></i> Home</a>
-            <a href="#"><i class="fas fa-fire"></i> Trending</a>
-            <a href="#"><i class="fas fa-tv"></i> TV Shows</a>
-            <a href="#"><i class="fas fa-film"></i> Movies</a>
-            <a href="#"><i class="fas fa-plus"></i> New & Popular</a>
-            <a href="#"><i class="fas fa-list"></i> My List</a>
-        </div>
+<header>
+  <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg></span>TAWA</a>
+  <nav>
+    <a href="#live">Live</a><a href="#tv">TV Shows</a><a href="#movies">Movies</a>
+  </nav>
+  <div id="authArea"></div>
+</header>
 
-        <div class="nav-actions">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search titles...">
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-badge">
-                <i class="fas fa-star"></i>
-                <span>Featured Content</span>
-            </div>
-            <h1 class="hero-title">Epic Adventure Awaits</h1>
-            <p class="hero-description">
-                Experience the ultimate streaming journey with exclusive content, 
-                premium quality, and unlimited entertainment at your fingertips.
-            </p>
-            <div class="hero-actions">
-                <button class="btn btn-primary" onclick="playFeatured()">
-                    <i class="fas fa-play"></i> Play Now
-                </button>
-                <button class="btn btn-secondary">
-                    <i class="fas fa-info-circle"></i> More Info
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Continue Watching -->
-        <section class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Continue Watching</h2>
-                <a href="#" class="view-all">
-                    View All <i class="fas fa-chevron-right"></i>
-                </a>
-            </div>
-            <div class="featured-row" id="continueWatching">
-                <!-- Continue watching cards will be loaded here -->
-            </div>
-        </section>
-
-        <!-- Trending Now -->
-        <section class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Trending Now</h2>
-                <a href="#" class="view-all">
-                    View All <i class="fas fa-chevron-right"></i>
-                </a>
-            </div>
-            <div class="video-grid" id="trendingGrid">
-                <!-- Trending videos will be loaded here -->
-            </div>
-        </section>
-
-        <!-- Popular Movies -->
-        <section class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Popular Movies</h2>
-                <a href="#" class="view-all">
-                    View All <i class="fas fa-chevron-right"></i>
-                </a>
-            </div>
-            <div class="video-grid" id="moviesGrid">
-                <!-- Movies will be loaded here -->
-            </div>
-        </section>
-
-        <!-- TV Shows -->
-        <section class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">TV Shows</h2>
-                <a href="#" class="view-all">
-                    View All <i class="fas fa-chevron-right"></i>
-                </a>
-            </div>
-            <div class="video-grid" id="tvShowsGrid">
-                <!-- TV shows will be loaded here -->
-            </div>
-        </section>
+<main>
+  <section class="hero" id="hero" hidden>
+    <div class="hero-body">
+      <span class="tag">New on TAWA</span>
+      <h1 id="heroTitle"></h1>
+      <button class="btn" id="heroPlay" type="button">Watch now</button>
     </div>
+  </section>
+  <div id="rows"><p class="empty">Loading…</p></div>
+</main>
 
-    <!-- Video Player Modal -->
-    <div class="player-modal" id="playerModal">
-        <div class="player-container">
-            <div class="player-header">
-                <div class="player-title" id="playerTitle">Now Playing</div>
-                <div class="player-actions">
-                    <button class="player-btn" onclick="toggleFullscreen()">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                    <button class="player-btn close-btn" onclick="closePlayer()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <video class="video-player" id="videoPlayer" controls>
-                Your browser does not support the video tag.
-            </video>
-        </div>
-    </div>
+<dialog id="authDlg" aria-labelledby="authHead">
+  <button class="x" type="button" aria-label="Close" data-close="authDlg">&times;</button>
+  <div class="step" id="s1">
+    <h2 id="authHead">Sign in with your phone</h2>
+    <p>No password. We text you a code.</p>
+    <label for="phone" style="font-weight:500">Phone number</label>
+    <div class="phone" style="margin-top:.4rem"><div class="cc">+260</div><input class="inp" id="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="97 123 4567"></div>
+    <button class="btn" style="width:100%" id="sendBtn" type="button">Send code</button>
+  </div>
+  <div class="step" id="s2">
+    <h2>Enter your code</h2>
+    <p id="codeHint">We texted you a 6-digit code.</p>
+    <input class="inp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" aria-label="6-digit code" style="text-align:center;letter-spacing:.4em;font-size:1.3rem;margin-bottom:.8rem">
+    <div class="stack"><button class="btn" id="verifyBtn" type="button">Sign in</button><button class="ghost" id="backBtn" type="button">Use a different number</button></div>
+  </div>
+  <div class="step" id="s3">
+    <h2>Subscribe to watch</h2>
+    <p>One plan. Cancel by simply not renewing.</p>
+    <div class="plan"><div><strong>K15</strong> <small>/ month</small><div class="cap">All movies, shows and live events.</div></div></div>
+    <button class="btn" style="width:100%" id="payBtn" type="button">Pay K15 with mobile money</button>
+    <p style="margin:.8rem 0 0;font-size:.9rem">You get a prompt on your phone to approve the payment (MTN or Airtel).</p>
+  </div>
+  <div class="msg" id="authMsg" role="status" aria-live="polite"></div>
+</dialog>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="copyright">
-            &copy; 2023 TAWA Streaming Platform. All rights reserved.
-        </div>
-    </footer>
+<dialog id="playDlg" class="wide" aria-label="Video player">
+  <button class="x" type="button" aria-label="Close player" data-close="playDlg">&times;</button>
+  <div class="ptitle" id="playTitle"></div>
+  <video id="player" controls playsinline></video>
+</dialog>
 
-    <script>
-        // Backend URL
-        const BACKEND_URL = 'https://tawa-streaming.onrender.com';
-        
-        // Sample data with thumbnails
-        const sampleVideos = [
-            {
-                id: 1,
-                title: "Epic Mountain Adventure",
-                description: "Join us on an incredible journey through the world's most beautiful mountain ranges.",
-                views: 12500,
-                likes: 1500,
-                duration: "1:45:22",
-                category: "Adventure",
-                upload_date: "2023-10-15",
-                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                thumbnail: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                progress: 65
-            },
-            {
-                id: 2,
-                title: "City Lights Time Lapse",
-                description: "Mesmerizing time-lapse of city lights and urban landscapes at night.",
-                views: 8900,
-                likes: 1200,
-                duration: "0:45:30",
-                category: "Documentary",
-                upload_date: "2023-10-10",
-                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-                thumbnail: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                progress: 30
-            },
-            {
-                id: 3,
-                title: "Underwater Wonders",
-                description: "Explore the breathtaking beauty of coral reefs and marine life.",
-                views: 15600,
-                likes: 2400,
-                duration: "2:15:45",
-                category: "Nature",
-                upload_date: "2023-10-05",
-                s3_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                thumbnail: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                progress: 0
-            }
-        ];
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows'];
+  let me = { signed_in: false, subscribed: false, price: 15 };
+  let library = [], live = { is_live: false };
+  let pendingPhone = '', lastSave = 0, hls = null;
 
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadVideos();
-            setupEventListeners();
-            setupScrollEffects();
-        });
+  /* ---------- helpers ---------- */
+  const get = async (url) => { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; };
+  const post = async (url, body) => {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    return { r, d: await r.json().catch(() => ({})) };
+  };
+  function say(text, kind) { const m = $('authMsg'); m.textContent = text || ''; m.className = 'msg ' + (kind || ''); }
+  function hue(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+  function progress() { try { return JSON.parse(localStorage.getItem('tawa_progress') || '{}'); } catch (e) { return {}; } }
 
-        // Load videos from backend
-        async function loadVideos() {
-            try {
-                const response = await fetch(`${BACKEND_URL}/videos`);
-                
-                if (response.ok) {
-                    const videos = await response.json();
-                    displayVideos(videos);
-                } else {
-                    // Use sample data if backend is not available
-                    displayVideos(sampleVideos);
-                }
-            } catch (error) {
-                console.error('Error loading videos:', error);
-                // Use sample data if there's an error
-                displayVideos(sampleVideos);
-            }
-        }
+  /* ---------- header ---------- */
+  function renderAuth() {
+    const a = $('authArea');
+    a.textContent = '';
+    if (me.signed_in) {
+      const who = document.createElement('span');
+      who.style.cssText = 'color:var(--muted);margin-right:.5rem';
+      who.textContent = me.phone;
+      const out = document.createElement('button');
+      out.className = 'link'; out.textContent = 'Log out';
+      out.onclick = async () => { await post('/auth/logout'); location.reload(); };
+      a.append(who);
+      if (!me.subscribed) {
+        const sub = document.createElement('button');
+        sub.className = 'btn'; sub.textContent = 'Subscribe K' + me.price; sub.style.marginRight = '.5rem';
+        sub.onclick = () => openAuth(3);
+        a.append(sub);
+      }
+      a.append(out);
+    } else {
+      const si = document.createElement('button');
+      si.className = 'link'; si.textContent = 'Sign in'; si.onclick = () => openAuth(1);
+      const sub = document.createElement('button');
+      sub.className = 'btn'; sub.textContent = 'Subscribe K' + me.price; sub.onclick = () => openAuth(1);
+      a.append(si, sub);
+    }
+  }
 
-        // Display videos in the grid
-        function displayVideos(videos) {
-            // Filter videos for different sections
-            const continueWatching = videos.filter(v => v.progress > 0);
-            const trending = videos.slice(0, 4);
-            const movies = videos.filter(v => v.category === 'Adventure' || v.category === 'Nature');
-            const tvShows = videos.filter(v => v.category === 'Documentary');
+  /* ---------- rows ---------- */
+  function card(title, sub, opts, onClick) {
+    const b = document.createElement('button');
+    b.className = 'card'; b.type = 'button'; b.onclick = onClick;
+    const p = document.createElement('div');
+    p.className = 'poster';
+    const h = hue(title);
+    p.style.background = 'linear-gradient(150deg,hsl(' + h + ',55%,28%),#172033)';
+    p.textContent = title;
+    if (opts.live) { const l = document.createElement('span'); l.className = 'live'; l.innerHTML = '<i></i>Live'; p.appendChild(l); }
+    if (opts.pct) { const bar = document.createElement('div'); bar.className = 'bar'; const f = document.createElement('b'); f.style.width = opts.pct + '%'; bar.appendChild(f); p.appendChild(bar); }
+    const c = document.createElement('div');
+    c.className = 'cap'; c.textContent = sub;
+    b.append(p, c);
+    return b;
+  }
+  function addRow(root, name, id, cards) {
+    if (!cards.length) return;
+    const s = document.createElement('section');
+    s.className = 'row'; if (id) s.id = id;
+    const h = document.createElement('h2'); h.textContent = name;
+    const w = document.createElement('div'); w.className = 'cards';
+    cards.forEach((c) => w.appendChild(c));
+    s.append(h, w); root.appendChild(s);
+  }
+  function renderRows() {
+    const root = $('rows'); root.textContent = '';
+    if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Watching live', { live: true }, playLive)]);
+    const prog = progress();
+    const resume = library.filter((v) => prog[v.id] && prog[v.id].t > 5 && prog[v.id].t < prog[v.id].d * 0.95)
+      .map((v) => card(v.title, 'Pick up where you left off', { pct: Math.round(prog[v.id].t / prog[v.id].d * 100) }, () => play(v)));
+    addRow(root, 'Continue Watching', 'continue', resume);
+    const cats = [...new Set(library.map((v) => v.category))];
+    const names = ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n)));
+    names.forEach((n) => {
+      const id = n === 'TV Shows' ? 'tv' : n === 'Popular Movies' ? 'movies' : null;
+      addRow(root, n, id, library.filter((v) => v.category === n).map((v) => card(v.title, n, {}, () => play(v))));
+    });
+    if (!root.children.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'New titles are on the way. Check back soon.'; root.appendChild(p); }
+    if (library.length) { $('hero').hidden = false; $('heroTitle').textContent = library[0].title; $('heroPlay').onclick = () => play(library[0]); }
+  }
 
-            // Display continue watching
-            displayContinueWatching(continueWatching);
-            
-            // Display trending
-            displayVideoGrid('trendingGrid', trending);
-            
-            // Display movies
-            displayVideoGrid('moviesGrid', movies);
-            
-            // Display TV shows
-            displayVideoGrid('tvShowsGrid', tvShows);
-        }
+  /* ---------- sign in and subscribe ---------- */
+  function openAuth(step) {
+    if (step === 3 && !me.signed_in) step = 1;
+    if (me.signed_in && step === 1) step = me.subscribed ? 0 : 3;
+    if (!step) return;
+    ['s1', 's2', 's3'].forEach((s, i) => $(s).classList.toggle('on', i + 1 === step));
+    say('');
+    const d = $('authDlg'); if (!d.open) d.showModal();
+    (step === 1 ? $('phone') : step === 2 ? $('code') : $('payBtn')).focus();
+  }
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => {
+    const d = $(b.dataset.close); d.close();
+  }));
+  $('playDlg').addEventListener('close', () => { $('player').pause(); if (hls) { hls.destroy(); hls = null; } $('player').removeAttribute('src'); });
 
-        // Display continue watching row
-        function displayContinueWatching(videos) {
-            const container = document.getElementById('continueWatching');
-            container.innerHTML = '';
+  $('sendBtn').onclick = async () => {
+    $('sendBtn').disabled = true; say('Sending your code…');
+    const { r, d } = await post('/auth/send-code', { phone: $('phone').value });
+    $('sendBtn').disabled = false;
+    if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
+    pendingPhone = d.phone; $('codeHint').textContent = 'We texted a 6-digit code to ' + d.phone + '.';
+    openAuth(2);
+  };
+  $('backBtn').onclick = () => openAuth(1);
+  $('verifyBtn').onclick = async () => {
+    $('verifyBtn').disabled = true;
+    const { r, d } = await post('/auth/verify', { phone: pendingPhone, code: $('code').value });
+    $('verifyBtn').disabled = false;
+    if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
+    me = d; renderAuth(); await refreshLive();
+    if (me.subscribed) $('authDlg').close(); else openAuth(3);
+  };
+  $('payBtn').onclick = async () => {
+    $('payBtn').disabled = true; say('Starting your payment…');
+    const { r, d } = await post('/pay/start');
+    if (!r.ok) { $('payBtn').disabled = false; return say(d.error || 'The payment could not start.', 'err'); }
+    say('Check your phone and approve the K' + me.price + ' payment.', 'ok');
+    for (let i = 0; i < 45; i++) {              // wait up to about 3 minutes
+      await new Promise((res) => setTimeout(res, 4000));
+      const m = (await get('/me')).d;
+      if (m.subscribed) { me = m; renderAuth(); await refreshLive(); $('authDlg').close(); $('payBtn').disabled = false; return; }
+    }
+    $('payBtn').disabled = false; say('We have not received your payment yet. If you paid, wait a minute and refresh.', 'err');
+  };
 
-            videos.forEach(video => {
-                const card = document.createElement('div');
-                card.className = 'featured-card';
-                card.onclick = () => playVideo(video.s3_url, video.title);
-                
-                card.innerHTML = `
-                    <div class="video-thumbnail">
-                        <img src="${video.thumbnail}" alt="${video.title}">
-                        <div class="video-overlay">
-                            <div class="play-button">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="video-info">
-                        <div class="video-title">${escapeHtml(video.title)}</div>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: ${video.progress}%"></div>
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(card);
-            });
-        }
+  /* ---------- playback ---------- */
+  async function play(v) {
+    if (!me.signed_in) return openAuth(1);
+    if (!me.subscribed) return openAuth(3);
+    const { r, d } = await get('/watch/' + v.id);
+    if (r.status === 401) return openAuth(1);
+    if (r.status === 402) { me.subscribed = false; renderAuth(); return openAuth(3); }
+    if (!r.ok) return alert(d.error || 'This video is not available right now.');
+    const vid = $('player');
+    $('playTitle').textContent = v.title;
+    vid.src = d.url;
+    const saved = progress()[v.id];
+    vid.onloadedmetadata = () => { if (saved && saved.t > 5 && saved.t < vid.duration * 0.95) vid.currentTime = saved.t; };
+    vid.ontimeupdate = () => {
+      if (Date.now() - lastSave < 5000 || !vid.duration) return;
+      lastSave = Date.now();
+      try { const p = progress(); p[v.id] = { t: vid.currentTime, d: vid.duration }; localStorage.setItem('tawa_progress', JSON.stringify(p)); } catch (e) { /* storage full or blocked */ }
+    };
+    vid.onended = () => { try { const p = progress(); delete p[v.id]; localStorage.setItem('tawa_progress', JSON.stringify(p)); } catch (e) { /* ignore */ } };
+    $('playDlg').showModal(); vid.play().catch(() => {});
+  }
+  function loadHls() {
+    return new Promise((res, rej) => {
+      if (window.Hls) return res();
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js';
+      s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    });
+  }
+  async function playLive() {
+    if (!me.signed_in) return openAuth(1);
+    if (!me.subscribed) return openAuth(3);
+    await refreshLive();
+    if (!live.is_live || !live.hls_url) return alert('The live has ended.');
+    const vid = $('player');
+    $('playTitle').textContent = live.title || 'TAWA Live';
+    vid.ontimeupdate = vid.onloadedmetadata = vid.onended = null;
+    if (vid.canPlayType('application/vnd.apple.mpegurl')) { vid.src = live.hls_url; }
+    else { try { await loadHls(); } catch (e) { return alert('Could not load the live player.'); } hls = new Hls(); hls.loadSource(live.hls_url); hls.attachMedia(vid); }
+    $('playDlg').showModal(); vid.play().catch(() => {});
+  }
 
-        // Display video grid
-        function displayVideoGrid(containerId, videos) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-
-            videos.forEach(video => {
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.onclick = () => playVideo(video.s3_url, video.title);
-                
-                card.innerHTML = `
-                    <div class="video-thumbnail">
-                        <img src="${video.thumbnail}" alt="${video.title}">
-                        <div class="video-overlay">
-                            <div class="play-button">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="video-info">
-                        <div class="video-title">${escapeHtml(video.title)}</div>
-                        <div class="video-meta">
-                            <span>${video.duration}</span>
-                            <div class="video-stats">
-                                <span><i class="fas fa-eye"></i> ${formatNumber(video.views)}</span>
-                                <span><i class="fas fa-heart"></i> ${formatNumber(video.likes)}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(card);
-            });
-        }
-
-        // Play video
-        function playVideo(videoUrl, title) {
-            const modal = document.getElementById('playerModal');
-            const player = document.getElementById('videoPlayer');
-            const playerTitle = document.getElementById('playerTitle');
-            
-            playerTitle.textContent = title;
-            player.src = videoUrl;
-            player.load();
-            
-            modal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            player.focus();
-        }
-
-        // Play featured video
-        function playFeatured() {
-            const featuredVideo = sampleVideos[0];
-            playVideo(featuredVideo.s3_url, featuredVideo.title);
-        }
-
-        // Close player
-        function closePlayer() {
-            const modal = document.getElementById('playerModal');
-            const player = document.getElementById('videoPlayer');
-            
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
-            player.pause();
-            player.src = '';
-        }
-
-        // Toggle fullscreen
-        function toggleFullscreen() {
-            const player = document.getElementById('videoPlayer');
-            if (!document.fullscreenElement) {
-                player.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
-            }
-        }
-
-        // Setup event listeners
-        function setupEventListeners() {
-            // Search functionality
-            document.getElementById('searchInput').addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                // Search logic would go here
-            });
-
-            // Navbar scroll effect
-            window.addEventListener('scroll', function() {
-                const navbar = document.getElementById('navbar');
-                if (window.scrollY > 100) {
-                    navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-            });
-
-            // Close modal with Escape key
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape') {
-                    closePlayer();
-                }
-            });
-        }
-
-        // Setup scroll effects
-        function setupScrollEffects() {
-            // Add intersection observer for fade-in animations
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            });
-
-            // Observe all video sections
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.style.opacity = '0';
-                section.style.transform = 'translateY(30px)';
-                section.style.transition = 'all 0.6s ease';
-                observer.observe(section);
-            });
-        }
-
-        // Utility functions
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-        
-        function formatNumber(num) {
-            if (num >= 1000000) {
-                return (num / 1000000).toFixed(1) + 'M';
-            }
-            if (num >= 1000) {
-                return (num / 1000).toFixed(1) + 'K';
-            }
-            return num;
-        }
-    </script>
+  /* ---------- boot ---------- */
+  async function refreshLive() { live = (await get('/api/live')).d; renderRows(); }
+  (async () => {
+    me = (await get('/me')).d; renderAuth();
+    library = (await get('/api/library')).d || [];
+    live = (await get('/api/live')).d;
+    renderRows();
+    setInterval(refreshLive, 60000);   // a live appears or ends without a page reload
+  })();
+</script>
 </body>
 </html>
