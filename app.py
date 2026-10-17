@@ -229,9 +229,10 @@ def grant_days(phone, days):
 
 def me_payload(user):
     if not user:
-        return {'signed_in': False, 'price': PRICE_KWACHA}
+        return {'signed_in': False, 'price': PRICE_KWACHA, 'sms': bool(os.environ.get('AT_API_KEY'))}
     return {'signed_in': True, 'phone': user['phone'], 'subscribed': is_subscribed(user),
-            'paid_until': user['paid_until'], 'price': PRICE_KWACHA}
+            'paid_until': user['paid_until'], 'price': PRICE_KWACHA,
+            'sms': bool(os.environ.get('AT_API_KEY'))}
 
 
 @app.route('/auth/send-code', methods=['POST'])
@@ -239,6 +240,9 @@ def send_code():
     phone = normalize_phone(json_body().get('phone'))
     if not phone:
         return jsonify({'error': 'Enter a valid Zambian number, like 097 123 4567.'}), 400
+    if not os.environ.get('AT_API_KEY'):
+        # No SMS service yet: the admin makes the code in /admin and sends it by hand
+        return jsonify({'ok': True, 'phone': phone, 'manual': True})
     conn = db()
     row = conn.execute('SELECT sent_at FROM otps WHERE phone = ?', (phone,)).fetchone()
     if row and time.time() - row['sent_at'] < 60:
@@ -264,7 +268,7 @@ def verify_code():
     row = conn.execute('SELECT * FROM otps WHERE phone = ?', (phone,)).fetchone() if phone else None
     if not row or row['expires'] < time.time():
         conn.close()
-        return jsonify({'error': 'That code has expired. Ask for a new one.'}), 400
+        return jsonify({'error': 'That code is not right or has expired. Ask TAWA for a new one.'}), 400
     if row['attempts'] >= 5:
         conn.close()
         return jsonify({'error': 'Too many tries. Ask for a new code.'}), 429
@@ -417,6 +421,28 @@ def admin_live():
     row = conn.execute('SELECT title, hls_url, is_live FROM live WHERE id = 1').fetchone()
     conn.close()
     return jsonify(dict(row))
+
+
+@app.route('/admin/code', methods=['POST'])
+@requires_admin
+def admin_code():
+    """Make a sign-in code (valid 24 hours) for a number, and optionally add paid days."""
+    b = json_body()
+    phone = normalize_phone(b.get('phone'))
+    if not phone:
+        return jsonify({'error': 'Enter a valid Zambian number.'}), 400
+    try:
+        days = max(0, min(365, int(b.get('days') or 0)))
+    except (TypeError, ValueError):
+        days = 0
+    paid_until = grant_days(phone, days) if days else None
+    code = f'{secrets.randbelow(10**6):06d}'
+    conn = db()
+    conn.execute('INSERT OR REPLACE INTO otps (phone, code_hash, expires, attempts, sent_at) VALUES (?, ?, ?, 0, 0)',
+                 (phone, hash_code(phone, code), time.time() + 86400))
+    conn.commit()
+    conn.close()
+    return jsonify({'phone': phone, 'code': code, 'paid_until': paid_until})
 
 
 @app.route('/admin/grant', methods=['POST'])
@@ -931,9 +957,13 @@ def admin_panel():
         <div style="display:flex;gap:0.6rem;align-items:center"><button class="btn" type="button" id="goLive">Go live</button><button class="btn-ghost" type="button" id="endLive">End live</button><span id="liveState" style="color:var(--muted)"></span></div>
       </div>
       <div>
-        <div class="field"><label for="grantPhone">Give a viewer access (cash or test)</label><input class="input" id="grantPhone" placeholder="097 123 4567"></div>
+        <div class="field"><label for="grantPhone">Add a viewer (they paid you by mobile money)</label><input class="input" id="grantPhone" placeholder="097 123 4567"></div>
         <div class="field"><label for="grantDays">Days</label><input class="input" id="grantDays" type="number" value="30" min="1" max="365"></div>
-        <button class="btn-ghost" type="button" id="grantBtn">Grant access</button>
+        <button class="btn" type="button" id="grantBtn">Give access and make code</button>
+        <div id="codeOut" style="display:none;margin-top:1rem;padding:1rem;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
+          <div id="codeText" style="font-size:.95rem;margin-bottom:.7rem"></div>
+          <button class="btn-ghost" type="button" id="copyCode">Copy message</button>
+        </div>
       </div>
     </div>
   </section>
@@ -1223,9 +1253,16 @@ def admin_panel():
   $('endLive').addEventListener('click', () => setLive(false));
   $('grantBtn').addEventListener('click', async () => {
     try {
-      const d = await postJSON('/admin/grant', { phone: $('grantPhone').value, days: $('grantDays').value });
-      notify('success', 'Access granted', 'Paid until ' + d.paid_until.slice(0, 10) + '.');
-    } catch (e) { notify('error', 'Could not grant access', e.message); }
+      const d = await postJSON('/admin/code', { phone: $('grantPhone').value, days: $('grantDays').value });
+      const msg = 'Your TAWA sign-in code is ' + d.code + '. Go to ' + location.origin + ', tap Sign in, enter your number ' + d.phone + ' and then this code.';
+      $('codeText').textContent = msg;
+      $('codeOut').style.display = 'block';
+      notify('success', 'Ready to send', 'Copy the message below and send it to ' + d.phone + (d.paid_until ? '. Access until ' + d.paid_until.slice(0, 10) + '.' : '.'));
+    } catch (e) { notify('error', 'Could not make the code', e.message); }
+  });
+  $('copyCode').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('codeText').textContent); $('copyCode').textContent = 'Copied'; } catch (e) { $('copyCode').textContent = 'Select the text and copy it'; }
+    setTimeout(() => { $('copyCode').textContent = 'Copy message'; }, 2000);
   });
   loadLive();
 
