@@ -1,11 +1,17 @@
 import os
+import re
+import time
 import uuid
 import hmac
+import hashlib
+import secrets
+import datetime
 import mimetypes
 from functools import wraps
 
 import boto3
-from flask import Flask, render_template, render_template_string, request, jsonify, Response
+import requests
+from flask import Flask, render_template, render_template_string, request, jsonify, Response, session, redirect
 import sqlite3
 from werkzeug.utils import secure_filename
 from botocore.exceptions import ClientError
@@ -99,6 +105,333 @@ def init_db():
     conn.commit()
     conn.close()
 init_db()
+
+# ---------------------------------------------------------------------------
+# Accounts (phone number + SMS code), K15 subscription, and live
+# ---------------------------------------------------------------------------
+PRICE_KWACHA = 15
+SUBSCRIPTION_DAYS = 30
+
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=not os.environ.get('DEV_MODE'),
+    PERMANENT_SESSION_LIFETIME=datetime.timedelta(days=90),
+)
+
+
+def db():
+    conn = sqlite3.connect('tawa.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_accounts_db():
+    conn = db()
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            phone TEXT UNIQUE NOT NULL,
+            paid_until TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS otps (
+            phone TEXT PRIMARY KEY,
+            code_hash TEXT NOT NULL,
+            expires REAL NOT NULL,
+            attempts INTEGER DEFAULT 0,
+            sent_at REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS payments (
+            reference TEXT PRIMARY KEY,
+            phone TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS live (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            title TEXT, hls_url TEXT, is_live INTEGER DEFAULT 0);
+        INSERT OR IGNORE INTO live (id, title, hls_url, is_live) VALUES (1, '', '', 0);
+    ''')
+    conn.commit()
+    conn.close()
+init_accounts_db()
+
+
+def utcnow():
+    return datetime.datetime.utcnow()
+
+
+def json_body():
+    """JSON only. A cross-site HTML form cannot send this, which blocks CSRF."""
+    return request.get_json(silent=True) or {}
+
+
+def normalize_phone(raw):
+    digits = re.sub(r'[\s\-()]', '', raw or '')
+    m = re.fullmatch(r'(?:\+?260|0)?(\d{9})', digits)
+    return '+260' + m.group(1) if m else None
+
+
+def hash_code(phone, code):
+    return hashlib.sha256(f'{app.secret_key}:{phone}:{code}'.encode()).hexdigest()
+
+
+def send_sms(phone, text):
+    """Africa's Talking. Without keys it only works when DEV_MODE=1 (code goes to the log)."""
+    key = os.environ.get('AT_API_KEY')
+    if not key:
+        if os.environ.get('DEV_MODE'):
+            print(f'DEV SMS to {phone}: {text}')
+            return True
+        return False
+    data = {'username': os.environ.get('AT_USERNAME', 'sandbox'), 'to': phone, 'message': text}
+    if os.environ.get('AT_SENDER'):
+        data['from'] = os.environ['AT_SENDER']
+    try:
+        r = requests.post('https://api.africastalking.com/version1/messaging',
+                          headers={'apiKey': key, 'Accept': 'application/json'},
+                          data=data, timeout=15)
+        return r.status_code in (200, 201)
+    except requests.RequestException as e:
+        print('SMS error:', e)
+        return False
+
+
+def current_user():
+    uid = session.get('uid')
+    if not uid:
+        return None
+    conn = db()
+    row = conn.execute('SELECT * FROM users WHERE id = ?', (uid,)).fetchone()
+    conn.close()
+    return row
+
+
+def is_subscribed(user):
+    return bool(user and user['paid_until'] and
+                datetime.datetime.fromisoformat(user['paid_until']) > utcnow())
+
+
+def grant_days(phone, days):
+    """Add days of access, stacking on top of any time already paid for."""
+    conn = db()
+    conn.execute('INSERT OR IGNORE INTO users (phone) VALUES (?)', (phone,))
+    row = conn.execute('SELECT paid_until FROM users WHERE phone = ?', (phone,)).fetchone()
+    base = utcnow()
+    if row['paid_until']:
+        base = max(base, datetime.datetime.fromisoformat(row['paid_until']))
+    new_until = (base + datetime.timedelta(days=days)).isoformat()
+    conn.execute('UPDATE users SET paid_until = ? WHERE phone = ?', (new_until, phone))
+    conn.commit()
+    conn.close()
+    return new_until
+
+
+def me_payload(user):
+    if not user:
+        return {'signed_in': False, 'price': PRICE_KWACHA}
+    return {'signed_in': True, 'phone': user['phone'], 'subscribed': is_subscribed(user),
+            'paid_until': user['paid_until'], 'price': PRICE_KWACHA}
+
+
+@app.route('/auth/send-code', methods=['POST'])
+def send_code():
+    phone = normalize_phone(json_body().get('phone'))
+    if not phone:
+        return jsonify({'error': 'Enter a valid Zambian number, like 097 123 4567.'}), 400
+    conn = db()
+    row = conn.execute('SELECT sent_at FROM otps WHERE phone = ?', (phone,)).fetchone()
+    if row and time.time() - row['sent_at'] < 60:
+        conn.close()
+        return jsonify({'error': 'Wait a minute before asking for another code.'}), 429
+    code = f'{secrets.randbelow(10**6):06d}'
+    if not send_sms(phone, f'Your TAWA code is {code}. It expires in 10 minutes.'):
+        conn.close()
+        return jsonify({'error': 'We could not send the text. Try again in a moment.'}), 503
+    conn.execute('INSERT OR REPLACE INTO otps (phone, code_hash, expires, attempts, sent_at) VALUES (?, ?, ?, 0, ?)',
+                 (phone, hash_code(phone, code), time.time() + 600, time.time()))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True, 'phone': phone})
+
+
+@app.route('/auth/verify', methods=['POST'])
+def verify_code():
+    body = json_body()
+    phone = normalize_phone(body.get('phone'))
+    code = re.sub(r'\D', '', str(body.get('code') or ''))
+    conn = db()
+    row = conn.execute('SELECT * FROM otps WHERE phone = ?', (phone,)).fetchone() if phone else None
+    if not row or row['expires'] < time.time():
+        conn.close()
+        return jsonify({'error': 'That code has expired. Ask for a new one.'}), 400
+    if row['attempts'] >= 5:
+        conn.close()
+        return jsonify({'error': 'Too many tries. Ask for a new code.'}), 429
+    conn.execute('UPDATE otps SET attempts = attempts + 1 WHERE phone = ?', (phone,))
+    if not hmac.compare_digest(row['code_hash'], hash_code(phone, code)):
+        conn.commit()
+        conn.close()
+        return jsonify({'error': 'That code is not right. Check the text and try again.'}), 400
+    conn.execute('DELETE FROM otps WHERE phone = ?', (phone,))
+    conn.execute('INSERT OR IGNORE INTO users (phone) VALUES (?)', (phone,))
+    user = conn.execute('SELECT * FROM users WHERE phone = ?', (phone,)).fetchone()
+    conn.commit()
+    conn.close()
+    session.clear()
+    session.permanent = True
+    session['uid'] = user['id']
+    return jsonify(me_payload(user))
+
+
+@app.route('/auth/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'ok': True})
+
+
+@app.route('/me')
+def me():
+    return jsonify(me_payload(current_user()))
+
+
+def charge_mobile_money(phone, amount, reference):
+    """TODO: connect your mobile money provider here (Lipila, DPO, MTN MoMo API, Airtel Money API...).
+
+    It must send a payment prompt for `amount` kwacha to `phone`, using `reference` as the
+    payment's ID, and set the provider's callback URL to POST /pay/webhook.
+    Until this is filled in, subscribers are activated with /admin/grant."""
+    raise NotImplementedError
+
+
+@app.route('/pay/start', methods=['POST'])
+def pay_start():
+    user = current_user()
+    if not user:
+        return jsonify({'error': 'Sign in first.'}), 401
+    reference = 'TAWA-' + uuid.uuid4().hex[:12]
+    conn = db()
+    conn.execute('INSERT INTO payments (reference, phone, amount) VALUES (?, ?, ?)',
+                 (reference, user['phone'], PRICE_KWACHA))
+    conn.commit()
+    conn.close()
+    try:
+        charge_mobile_money(user['phone'], PRICE_KWACHA, reference)
+    except NotImplementedError:
+        return jsonify({'error': 'Payments are not switched on yet. Please try again soon.'}), 503
+    except Exception as e:
+        print('Payment error:', e)
+        return jsonify({'error': 'The payment could not start. Try again.'}), 502
+    return jsonify({'ok': True, 'reference': reference})
+
+
+@app.route('/pay/webhook', methods=['POST'])
+def pay_webhook():
+    """Called by your payment provider. Check their docs: many sign the request, so swap the
+    shared-secret check below for their signature check."""
+    secret = os.environ.get('PAYMENT_WEBHOOK_SECRET')
+    if not secret:
+        return jsonify({'error': 'Webhook not configured'}), 503
+    if not hmac.compare_digest(request.headers.get('X-Webhook-Secret', ''), secret):
+        return jsonify({'error': 'Forbidden'}), 403
+    body = json_body()
+    if str(body.get('status', '')).lower() != 'success':
+        return jsonify({'ok': True})
+    conn = db()
+    pay = conn.execute('SELECT * FROM payments WHERE reference = ?', (body.get('reference'),)).fetchone()
+    done = conn.execute("UPDATE payments SET status = 'paid' WHERE reference = ? AND status = 'pending'",
+                        (body.get('reference'),)).rowcount
+    conn.commit()
+    conn.close()
+    if pay and done:  # only the first callback grants access
+        grant_days(pay['phone'], SUBSCRIPTION_DAYS)
+    return jsonify({'ok': True})
+
+
+@app.route('/api/library')
+def api_library():
+    """Public catalogue: titles and rows only. No video links."""
+    conn = db()
+    rows = conn.execute("SELECT id, title, category, upload_date FROM videos WHERE s3_key IS NOT NULL ORDER BY upload_date DESC").fetchall()
+    conn.close()
+    return jsonify([{'id': r['id'], 'title': r['title'], 'category': r['category'] or 'General',
+                     'upload_date': r['upload_date']} for r in rows])
+
+
+def presigned(s3_key, seconds=3 * 3600):
+    return s3_client.generate_presigned_url(
+        'get_object', Params={'Bucket': AWS_BUCKET_NAME, 'Key': s3_key}, ExpiresIn=seconds)
+
+
+@app.route('/watch/<int:video_id>')
+def watch(video_id):
+    user = current_user()
+    if not user:
+        return jsonify({'error': 'login'}), 401
+    if not is_subscribed(user):
+        return jsonify({'error': 'subscribe'}), 402
+    conn = db()
+    row = conn.execute('SELECT title, s3_key FROM videos WHERE id = ?', (video_id,)).fetchone()
+    conn.close()
+    if not row or not row['s3_key']:
+        return jsonify({'error': 'Video not found'}), 404
+    return jsonify({'title': row['title'], 'url': presigned(row['s3_key'])})
+
+
+@app.route('/api/live')
+def api_live():
+    conn = db()
+    row = conn.execute('SELECT title, hls_url, is_live FROM live WHERE id = 1').fetchone()
+    conn.close()
+    out = {'is_live': bool(row['is_live'] and row['hls_url']), 'title': row['title']}
+    if out['is_live'] and is_subscribed(current_user()):
+        out['hls_url'] = row['hls_url']
+    return jsonify(out)
+
+
+@app.route('/admin/stream/<int:video_id>')
+@requires_admin
+def admin_stream(video_id):
+    conn = db()
+    row = conn.execute('SELECT s3_key FROM videos WHERE id = ?', (video_id,)).fetchone()
+    conn.close()
+    if not row or not row['s3_key']:
+        return 'Video not found', 404
+    return redirect(presigned(row['s3_key'], 900))
+
+
+@app.route('/admin/live', methods=['GET', 'POST'])
+@requires_admin
+def admin_live():
+    conn = db()
+    if request.method == 'POST':
+        b = json_body()
+        url = (b.get('hls_url') or '').strip()
+        on = 1 if b.get('is_live') else 0
+        if on and not url.startswith('https://'):
+            conn.close()
+            return jsonify({'error': 'Paste the https playback link from your live service.'}), 400
+        conn.execute('UPDATE live SET title = ?, hls_url = ?, is_live = ? WHERE id = 1',
+                     ((b.get('title') or '').strip()[:120] or 'TAWA Live', url, on))
+        conn.commit()
+    row = conn.execute('SELECT title, hls_url, is_live FROM live WHERE id = 1').fetchone()
+    conn.close()
+    return jsonify(dict(row))
+
+
+@app.route('/admin/grant', methods=['POST'])
+@requires_admin
+def admin_grant():
+    b = json_body()
+    phone = normalize_phone(b.get('phone'))
+    try:
+        days = max(1, min(365, int(b.get('days') or SUBSCRIPTION_DAYS)))
+    except (TypeError, ValueError):
+        days = SUBSCRIPTION_DAYS
+    if not phone:
+        return jsonify({'error': 'Enter a valid Zambian number.'}), 400
+    return jsonify({'paid_until': grant_days(phone, days)})
+
 
 def allowed_file(filename):
     allowed_extensions = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
@@ -206,6 +539,7 @@ def upload_video():
         print("=== UPLOAD DEBUG END ===")
 
 @app.route('/videos')
+@requires_admin
 def get_videos():
     try:
         conn = sqlite3.connect('tawa.db')
@@ -261,11 +595,14 @@ Sitemap: https://tawa-streaming.onrender.com/sitemap.xml'''
 def admin_panel():
     total_videos = 0
     total_categories = 0
+    subs = 0
     try:
         conn = sqlite3.connect('tawa.db')
         c = conn.cursor()
         c.execute("SELECT COUNT(*), COUNT(DISTINCT category) FROM videos")
         total_videos, total_categories = c.fetchone()
+        c.execute("SELECT COUNT(*) FROM users WHERE paid_until > ?", (utcnow().isoformat(),))
+        subs = c.fetchone()[0]
         conn.close()
     except Exception as e:
         print(f"Error computing admin stats: {e}")
@@ -346,7 +683,7 @@ def admin_panel():
   .page-head p { color: var(--muted); margin-top: 0.4rem; max-width: 56ch; }
 
   /* ---------- Stats ---------- */
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
   .stat {
     background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
     padding: 1.2rem 1.3rem;
@@ -527,6 +864,10 @@ def admin_panel():
       <div class="stat-value" id="statCats">{{ total_categories }}</div>
     </div>
     <div class="stat">
+      <div class="stat-label">Active Subscribers</div>
+      <div class="stat-value">{{ subs }}</div>
+    </div>
+    <div class="stat">
       <div class="stat-label">S3 Storage Status</div>
       <div class="pill"><i></i>Connected</div>
     </div>
@@ -558,7 +899,7 @@ def admin_panel():
               <option value="Trending Now">Trending Now</option>
               <option value="Popular Movies">Popular Movies</option>
               <option value="TV Shows">TV Shows</option>
-              <option value="Continue Watching">Continue Watching</option>
+              
             </select>
           </div>
         </div>
@@ -578,6 +919,23 @@ def admin_panel():
         <button type="submit" class="btn" id="uploadBtn">Upload to cloud</button>
       </div>
     </form>
+  </section>
+
+  <section class="card" aria-labelledby="liveHead">
+    <h2 class="card-title" id="liveHead">Live and access</h2>
+    <p class="card-sub">Paste the playback link (.m3u8) from your live streaming service, then go live. Subscribers see it in the Live now row.</p>
+    <div class="upload-grid">
+      <div>
+        <div class="field"><label for="liveTitle">Live title</label><input class="input" id="liveTitle" maxlength="120" placeholder="e.g. Friday night match"></div>
+        <div class="field"><label for="liveUrl">Playback link</label><input class="input" id="liveUrl" placeholder="https://.../playlist.m3u8"></div>
+        <div style="display:flex;gap:0.6rem;align-items:center"><button class="btn" type="button" id="goLive">Go live</button><button class="btn-ghost" type="button" id="endLive">End live</button><span id="liveState" style="color:var(--muted)"></span></div>
+      </div>
+      <div>
+        <div class="field"><label for="grantPhone">Give a viewer access (cash or test)</label><input class="input" id="grantPhone" placeholder="097 123 4567"></div>
+        <div class="field"><label for="grantDays">Days</label><input class="input" id="grantDays" type="number" value="30" min="1" max="365"></div>
+        <button class="btn-ghost" type="button" id="grantBtn">Grant access</button>
+      </div>
+    </div>
   </section>
 
   <section class="card" aria-labelledby="libTitle">
@@ -795,7 +1153,7 @@ def admin_panel():
       if (v.s3_url) {
         action = document.createElement('a');
         action.className = 'test-link';
-        action.href = v.s3_url;
+        action.href = '/admin/stream/' + v.id;
         action.target = '_blank';
         action.rel = 'noopener';
         action.textContent = 'Test Stream ↗';
@@ -837,13 +1195,47 @@ def admin_panel():
     }
   }
 
+  /* ---------- Live and access ---------- */
+  function notify(kind, title, text) { setStatus(kind, title, text); $('statusCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  async function postJSON(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let d = {};
+    try { d = await r.json(); } catch (e) { /* non-JSON */ }
+    if (!r.ok) throw new Error(d.error || 'Request failed');
+    return d;
+  }
+  async function loadLive() {
+    try {
+      const d = await (await fetch('/admin/live')).json();
+      $('liveTitle').value = d.title || '';
+      $('liveUrl').value = d.hls_url || '';
+      $('liveState').textContent = d.is_live ? 'You are live' : 'Not live';
+    } catch (e) { /* leave blank */ }
+  }
+  async function setLive(on) {
+    try {
+      await postJSON('/admin/live', { title: $('liveTitle').value, hls_url: $('liveUrl').value, is_live: on });
+      notify('success', on ? 'You are live' : 'Live ended', on ? 'Subscribers now see it in the Live now row.' : 'The Live now row is hidden.');
+      loadLive();
+    } catch (e) { notify('error', 'Could not update live', e.message); }
+  }
+  $('goLive').addEventListener('click', () => setLive(true));
+  $('endLive').addEventListener('click', () => setLive(false));
+  $('grantBtn').addEventListener('click', async () => {
+    try {
+      const d = await postJSON('/admin/grant', { phone: $('grantPhone').value, days: $('grantDays').value });
+      notify('success', 'Access granted', 'Paid until ' + d.paid_until.slice(0, 10) + '.');
+    } catch (e) { notify('error', 'Could not grant access', e.message); }
+  });
+  loadLive();
+
   $('search').addEventListener('input', renderLibrary);
   $('refresh').addEventListener('click', loadLibrary);
   document.addEventListener('DOMContentLoaded', loadLibrary);
 </script>
 </body>
 </html>
-''', total_videos=total_videos, total_categories=total_categories)
+''', total_videos=total_videos, total_categories=total_categories, subs=subs)
 
 if __name__ == '__main__':
     init_db()
