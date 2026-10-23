@@ -8,8 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0F172A; --panel:#1E293B; --line:#2B3A52; --text:#F1F5F9; --muted:#94A3B8; --sky:#38BDF8; --copper:#E8A15B; --bad:#F87171; --ok:#34D399; }
+  :root { --bg:#0F172A; --panel:#1E293B; --line:#2B3A52; --text:#F1F5F9; --muted:#94A3B8; --sky:#38BDF8; --copper:#E8A15B; --bad:#F87171; }
   * { margin:0; padding:0; box-sizing:border-box; }
+  [hidden] { display:none !important; }
   body { background:var(--bg); color:var(--text); font-family:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; min-height:100vh; }
   button, input { font-family:inherit; }
   a { color:inherit; text-decoration:none; }
@@ -26,12 +27,14 @@
   .btn:disabled { opacity:.55; cursor:not-allowed; }
   .ghost { height:46px; padding:0 1.2rem; border:1px solid #475569; border-radius:10px; background:transparent; color:var(--text); font-weight:500; font-size:.95rem; cursor:pointer; }
   .ghost:hover { border-color:var(--sky); }
+  .ghost.sm { height:36px; padding:0 .9rem; font-size:.88rem; }
   .link { background:none; border:none; color:var(--text); font-weight:500; font-size:1rem; cursor:pointer; padding:.5rem; }
   main { padding:1.5rem clamp(1rem,4vw,3rem) 4rem; display:flex; flex-direction:column; gap:2rem; }
   .hero { min-height:300px; border-radius:20px; position:relative; overflow:hidden; display:flex; align-items:flex-end; background:linear-gradient(110deg,#0C4A6E,#1E3A5F 55%,#7A4A22); }
   .hero::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(15,23,42,.9),rgba(15,23,42,0) 70%); }
   .hero-body { position:relative; padding:2rem; max-width:560px; }
   .tag { display:inline-block; background:var(--copper); color:#2A1608; font-weight:700; font-size:.85rem; padding:.25rem .75rem; border-radius:999px; }
+  .tag.on-air { background:var(--bad); color:#2B0A0A; }
   .hero h1 { font-size:clamp(1.8rem,5vw,2.8rem); font-weight:800; line-height:1.05; margin:.6rem 0 1rem; }
   .row h2 { font-size:1.35rem; font-weight:700; margin-bottom:.7rem; }
   .cards { display:flex; gap:.9rem; overflow-x:auto; padding-bottom:.6rem; scroll-snap-type:x proximity; }
@@ -53,7 +56,7 @@
   .inp:focus { outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
   .phone { display:flex; gap:.5rem; margin-bottom:.8rem; }
   .cc { height:48px; padding:0 .9rem; display:flex; align-items:center; border-radius:10px; border:1px solid var(--line); background:var(--bg); }
-  .plan { margin:1rem 0; padding:1.1rem; border-radius:12px; border:1px solid rgba(56,189,248,.45); background:rgba(56,189,248,.07); display:flex; justify-content:space-between; align-items:baseline; gap:1rem; }
+  .plan { margin:1rem 0; padding:1.1rem; border-radius:12px; border:1px solid rgba(56,189,248,.45); background:rgba(56,189,248,.07); }
   .plan strong { font-size:1.9rem; color:#7DD3FC; }
   .plan small { color:var(--muted); font-size:.95rem; }
   .msg { min-height:1.4rem; margin-top:.8rem; font-size:.95rem; }
@@ -61,24 +64,32 @@
   .stack { display:flex; flex-direction:column; gap:.6rem; }
   .step { display:none; } .step.on { display:block; }
   .x { float:right; background:none; border:none; color:var(--muted); font-size:1.6rem; cursor:pointer; line-height:1; width:44px; height:44px; }
-  video { width:100%; max-height:76vh; border-radius:10px; background:#000; display:block; }
-  .ptitle { font-weight:700; padding:.2rem .3rem .7rem; }
+  /* player */
+  .ptitle { display:flex; align-items:center; gap:.7rem; font-weight:700; padding:.2rem .3rem .7rem; min-height:44px; }
+  .onair { display:inline-flex; align-items:center; gap:6px; background:rgba(248,113,113,.15); color:#FCA5A5; border:1px solid rgba(248,113,113,.5); padding:2px 10px; border-radius:999px; font-size:.8rem; }
+  .onair i { width:8px; height:8px; border-radius:50%; background:var(--bad); animation:blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity:.3; } }
+  .stage { position:relative; }
+  video { width:100%; max-height:72vh; border-radius:10px; background:#000; display:block; aspect-ratio:16/9; }
+  .overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.8rem; background:rgba(0,0,0,.55); border-radius:10px; pointer-events:none; text-align:center; padding:1rem; }
+  .spin { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.25); border-top-color:var(--sky); animation:spin .9s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .pbar { display:flex; gap:.6rem; justify-content:flex-end; padding-top:.7rem; min-height:44px; }
   @media (max-width:700px) { nav { display:none; } header { gap:1rem; } .brand { flex:1; } }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
 <header>
   <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg></span>TAWA</a>
-  <nav>
-    <a href="#live">Live</a><a href="#tv">TV Shows</a><a href="#movies">Movies</a>
-  </nav>
+  <nav><a href="#live">Live</a><a href="#tv">TV Shows</a><a href="#movies">Movies</a></nav>
   <div id="authArea"></div>
 </header>
 
 <main>
   <section class="hero" id="hero" hidden>
     <div class="hero-body">
-      <span class="tag">New on TAWA</span>
+      <span class="tag" id="heroTag">New on TAWA</span>
       <h1 id="heroTitle"></h1>
       <button class="btn" id="heroPlay" type="button">Watch now</button>
     </div>
@@ -101,7 +112,7 @@
   <div class="step" id="s3">
     <h2>Subscribe to watch</h2>
     <p>One plan. Cancel by simply not renewing.</p>
-    <div class="plan"><div><strong>K15</strong> <small>/ month</small><div class="cap">All movies, shows and live events.</div></div></div>
+    <div class="plan"><strong>K15</strong> <small>/ month</small><div class="cap">All movies, shows and live events.</div></div>
     <button class="btn" style="width:100%" id="payBtn" type="button">Pay K15 with mobile money</button>
     <p style="margin:.8rem 0 0;font-size:.9rem">You get a prompt on your phone to approve the payment (MTN or Airtel).</p>
   </div>
@@ -110,8 +121,15 @@
 
 <dialog id="playDlg" class="wide" aria-label="Video player">
   <button class="x" type="button" aria-label="Close player" data-close="playDlg">&times;</button>
-  <div class="ptitle" id="playTitle"></div>
-  <video id="player" controls playsinline></video>
+  <div class="ptitle"><span id="playTitle"></span><span class="onair" id="liveTag" hidden><i></i>Live</span></div>
+  <div class="stage">
+    <video id="player" controls playsinline></video>
+    <div class="overlay" id="overlay" hidden role="status"><div class="spin" id="spin"></div><span id="ovText"></span></div>
+  </div>
+  <div class="pbar">
+    <button class="ghost sm" id="unmuteBtn" type="button" hidden>Tap to unmute</button>
+    <button class="ghost sm" id="edgeBtn" type="button" hidden>Jump to live</button>
+  </div>
 </dialog>
 
 <script>
@@ -119,17 +137,21 @@
   const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows'];
   let me = { signed_in: false, subscribed: false, price: 15 };
   let library = [], live = { is_live: false };
-  let lastSave = 0, hls = null;
+  let lastSave = 0, hls = null, retryTimer = null, watchingLive = false;
+  const vid = $('player');
 
   /* ---------- helpers ---------- */
-  const get = async (url) => { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; };
+  const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; } };
   const post = async (url, body) => {
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-    return { r, d: await r.json().catch(() => ({})) };
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+      return { r, d: await r.json().catch(() => ({})) };
+    } catch (e) { return { r: { ok: false, status: 0 }, d: { error: 'No connection. Check your internet and try again.' } }; }
   };
   function say(text, kind) { const m = $('authMsg'); m.textContent = text || ''; m.className = 'msg ' + (kind || ''); }
   function hue(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
   function progress() { try { return JSON.parse(localStorage.getItem('tawa_progress') || '{}'); } catch (e) { return {}; } }
+  function saveProgress(p) { try { localStorage.setItem('tawa_progress', JSON.stringify(p)); } catch (e) { /* blocked */ } }
 
   /* ---------- header ---------- */
   function renderAuth() {
@@ -165,10 +187,9 @@
     b.className = 'card'; b.type = 'button'; b.onclick = onClick;
     const p = document.createElement('div');
     p.className = 'poster';
-    const h = hue(title);
-    p.style.background = 'linear-gradient(150deg,hsl(' + h + ',55%,28%),#172033)';
+    p.style.background = 'linear-gradient(150deg,hsl(' + hue(title) + ',55%,28%),#172033)';
     p.textContent = title;
-    if (opts.live) { const l = document.createElement('span'); l.className = 'live'; l.innerHTML = '<i></i>Live'; p.appendChild(l); }
+    if (opts.live) { const l = document.createElement('span'); l.className = 'live'; const i = document.createElement('i'); l.append(i, 'Live'); p.appendChild(l); }
     if (opts.pct) { const bar = document.createElement('div'); bar.className = 'bar'; const f = document.createElement('b'); f.style.width = opts.pct + '%'; bar.appendChild(f); p.appendChild(bar); }
     const c = document.createElement('div');
     c.className = 'cap'; c.textContent = sub;
@@ -198,7 +219,17 @@
       addRow(root, n, id, library.filter((v) => v.category === n).map((v) => card(v.title, n, {}, () => play(v))));
     });
     if (!root.children.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'New titles are on the way. Check back soon.'; root.appendChild(p); }
-    if (library.length) { $('hero').hidden = false; $('heroTitle').textContent = library[0].title; $('heroPlay').onclick = () => play(library[0]); }
+    renderHero();
+  }
+  function renderHero() {
+    const hero = $('hero');
+    if (live.is_live) {
+      hero.hidden = false; $('heroTag').textContent = 'Live now'; $('heroTag').className = 'tag on-air';
+      $('heroTitle').textContent = live.title || 'TAWA Live'; $('heroPlay').textContent = 'Watch live'; $('heroPlay').onclick = playLive;
+    } else if (library.length) {
+      hero.hidden = false; $('heroTag').textContent = 'New on TAWA'; $('heroTag').className = 'tag';
+      $('heroTitle').textContent = library[0].title; $('heroPlay').textContent = 'Watch now'; $('heroPlay').onclick = () => play(library[0]);
+    } else hero.hidden = true;
   }
 
   /* ---------- sign in and subscribe ---------- */
@@ -211,10 +242,7 @@
     const d = $('authDlg'); if (!d.open) d.showModal();
     (step === 1 ? $('phone') : $('payBtn')).focus();
   }
-  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => {
-    const d = $(b.dataset.close); d.close();
-  }));
-  $('playDlg').addEventListener('close', () => { $('player').pause(); if (hls) { hls.destroy(); hls = null; } $('player').removeAttribute('src'); });
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).close()));
 
   $('textBtn').onclick = async () => {
     $('textBtn').disabled = true; say('Sending your code…');
@@ -236,7 +264,7 @@
     const { r, d } = await post('/pay/start');
     if (!r.ok) { $('payBtn').disabled = false; return say(d.error || 'The payment could not start.', 'err'); }
     say('Check your phone and approve the K' + me.price + ' payment.', 'ok');
-    for (let i = 0; i < 45; i++) {              // wait up to about 3 minutes
+    for (let i = 0; i < 45; i++) {
       await new Promise((res) => setTimeout(res, 4000));
       const m = (await get('/me')).d;
       if (m.subscribed) { me = m; renderAuth(); await refreshLive(); $('authDlg').close(); $('payBtn').disabled = false; return; }
@@ -244,7 +272,28 @@
     $('payBtn').disabled = false; say('We have not received your payment yet. If you paid, wait a minute and refresh.', 'err');
   };
 
-  /* ---------- playback ---------- */
+  /* ---------- player ---------- */
+  function overlay(text, spin) { $('overlay').hidden = !text; $('ovText').textContent = text || ''; $('spin').hidden = spin === false; }
+  function stopPlayer() {
+    clearTimeout(retryTimer);
+    if (hls) { hls.destroy(); hls = null; }
+    vid.ontimeupdate = vid.onloadedmetadata = vid.onended = null;
+    vid.pause(); vid.removeAttribute('src'); vid.load();
+    watchingLive = false;
+    overlay('');
+    ['liveTag', 'edgeBtn', 'unmuteBtn'].forEach((id) => { $(id).hidden = true; });
+  }
+  async function startPlay() {
+    try { await vid.play(); }
+    catch (e) { vid.muted = true; try { await vid.play(); $('unmuteBtn').hidden = false; } catch (e2) { overlay('Press play to start.', false); } }
+  }
+  $('playDlg').addEventListener('close', stopPlayer);
+  $('unmuteBtn').onclick = () => { vid.muted = false; $('unmuteBtn').hidden = true; };
+  $('edgeBtn').onclick = () => { if (hls && hls.liveSyncPosition) vid.currentTime = hls.liveSyncPosition; vid.play().catch(() => {}); };
+  vid.addEventListener('playing', () => overlay(''));
+  vid.addEventListener('waiting', () => { if ($('playDlg').open && !vid.ended) overlay('Buffering…'); });
+  vid.addEventListener('error', () => { if ($('playDlg').open && !watchingLive && vid.getAttribute('src')) overlay('This video could not be loaded. Try again in a moment.', false); });
+
   async function play(v) {
     if (!me.signed_in) return openAuth(1);
     if (!me.subscribed) return openAuth(3);
@@ -252,19 +301,20 @@
     if (r.status === 401) return openAuth(1);
     if (r.status === 402) { me.subscribed = false; renderAuth(); return openAuth(3); }
     if (!r.ok) return alert(d.error || 'This video is not available right now.');
-    const vid = $('player');
+    stopPlayer();
     $('playTitle').textContent = v.title;
-    vid.src = d.url;
     const saved = progress()[v.id];
     vid.onloadedmetadata = () => { if (saved && saved.t > 5 && saved.t < vid.duration * 0.95) vid.currentTime = saved.t; };
     vid.ontimeupdate = () => {
       if (Date.now() - lastSave < 5000 || !vid.duration) return;
       lastSave = Date.now();
-      try { const p = progress(); p[v.id] = { t: vid.currentTime, d: vid.duration }; localStorage.setItem('tawa_progress', JSON.stringify(p)); } catch (e) { /* storage full or blocked */ }
+      const p = progress(); p[v.id] = { t: vid.currentTime, d: vid.duration }; saveProgress(p);
     };
-    vid.onended = () => { try { const p = progress(); delete p[v.id]; localStorage.setItem('tawa_progress', JSON.stringify(p)); } catch (e) { /* ignore */ } };
-    $('playDlg').showModal(); vid.play().catch(() => {});
+    vid.onended = () => { const p = progress(); delete p[v.id]; saveProgress(p); };
+    $('playDlg').showModal(); overlay('Loading…');
+    vid.src = d.url; startPlay();
   }
+
   function loadHls() {
     return new Promise((res, rej) => {
       if (window.Hls) return res();
@@ -273,27 +323,48 @@
       s.onload = res; s.onerror = rej; document.head.appendChild(s);
     });
   }
+  function attachLive(url) {
+    if (window.Hls && Hls.isSupported()) {
+      hls = new Hls({ lowLatencyMode: true, liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, manifestLoadingMaxRetry: 4, manifestLoadingRetryDelay: 1500 });
+      hls.on(Hls.Events.MANIFEST_PARSED, startPlay);
+      hls.on(Hls.Events.ERROR, (ev, data) => {
+        if (!data.fatal || !hls) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          overlay('Waiting for the stream to start…');
+          clearTimeout(retryTimer);
+          retryTimer = setTimeout(() => { if (hls) { hls.loadSource(url); hls.startLoad(); } }, 4000);
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+        else overlay('The live could not play. Close this window and try again.', false);
+      });
+      hls.loadSource(url); hls.attachMedia(vid);
+    } else { vid.src = url; startPlay(); }   // Safari and iPhones play HLS natively
+  }
   async function playLive() {
     if (!me.signed_in) return openAuth(1);
     if (!me.subscribed) return openAuth(3);
     await refreshLive();
     if (!live.is_live || !live.hls_url) return alert('The live has ended.');
-    const vid = $('player');
+    stopPlayer(); watchingLive = true;
     $('playTitle').textContent = live.title || 'TAWA Live';
-    vid.ontimeupdate = vid.onloadedmetadata = vid.onended = null;
-    if (vid.canPlayType('application/vnd.apple.mpegurl')) { vid.src = live.hls_url; }
-    else { try { await loadHls(); } catch (e) { return alert('Could not load the live player.'); } hls = new Hls(); hls.loadSource(live.hls_url); hls.attachMedia(vid); }
-    $('playDlg').showModal(); vid.play().catch(() => {});
+    $('liveTag').hidden = false;
+    $('playDlg').showModal(); overlay('Connecting to the live…');
+    try { await loadHls(); } catch (e) { /* fall back to native playback */ }
+    attachLive(live.hls_url);
+    vid.ontimeupdate = () => { $('edgeBtn').hidden = !(hls && hls.liveSyncPosition && hls.liveSyncPosition - vid.currentTime > 12); };
   }
 
   /* ---------- boot ---------- */
-  async function refreshLive() { live = (await get('/api/live')).d; renderRows(); }
+  async function refreshLive() {
+    const d = (await get('/api/live')).d;
+    live = d && typeof d.is_live !== 'undefined' ? d : { is_live: false };
+    if (watchingLive && !live.is_live && $('playDlg').open) { overlay('The live has ended. Thanks for watching.', false); $('liveTag').hidden = true; }
+    renderRows();
+  }
   (async () => {
     me = (await get('/me')).d; renderAuth(); $('textBtn').hidden = !me.sms;
     library = (await get('/api/library')).d || [];
-    live = (await get('/api/live')).d;
-    renderRows();
-    setInterval(refreshLive, 60000);   // a live appears or ends without a page reload
+    await refreshLive();
+    setInterval(refreshLive, 30000);   // a live appears or ends without a page reload
   })();
 </script>
 </body>
