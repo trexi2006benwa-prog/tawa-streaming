@@ -8,90 +8,153 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0F172A; --panel:#1E293B; --line:#2B3A52; --text:#F1F5F9; --muted:#94A3B8; --sky:#38BDF8; --copper:#E8A15B; --bad:#F87171; }
+  :root { --base:#ADD8E6; --ink:#0B2540; --mut:#3F6486; --deep:#0E4D7A; --live:#E5484D; }
   * { margin:0; padding:0; box-sizing:border-box; }
   [hidden] { display:none !important; }
-  body { background:var(--bg); color:var(--text); font-family:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; min-height:100vh; }
-  button, input { font-family:inherit; }
+  body { color:var(--ink); font-family:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; min-height:100vh; background:radial-gradient(620px 420px at 8% 0%,#E6F5FA,transparent),radial-gradient(760px 520px at 100% 28%,#7FC1E0,transparent),radial-gradient(640px 520px at 30% 100%,#CFEBF6,transparent),var(--base); background-attachment:fixed; }
+  button, input, select { font-family:inherit; }
   a { color:inherit; text-decoration:none; }
-  :focus-visible { outline:2px solid var(--sky); outline-offset:2px; }
-  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:2rem; padding:0 clamp(1rem,4vw,3rem); height:72px; background:rgba(15,23,42,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
-  .brand { display:flex; align-items:center; gap:.6rem; font-weight:800; font-size:1.4rem; letter-spacing:.04em; }
-  .mark { width:30px; height:30px; border-radius:9px; background:var(--sky); display:grid; place-items:center; }
-  .mark svg { width:12px; height:12px; margin-left:2px; fill:var(--bg); }
-  nav { display:flex; gap:1.4rem; flex:1; }
-  nav a { color:#CBD5E1; font-weight:500; padding:.5rem .2rem; }
-  nav a:hover { color:var(--sky); }
-  .btn { height:46px; padding:0 1.4rem; border:none; border-radius:10px; background:var(--sky); color:#06243A; font-weight:700; font-size:1rem; cursor:pointer; }
-  .btn:hover { background:#7DD3FC; }
-  .btn:disabled { opacity:.55; cursor:not-allowed; }
-  .ghost { height:46px; padding:0 1.2rem; border:1px solid #475569; border-radius:10px; background:transparent; color:var(--text); font-weight:500; font-size:.95rem; cursor:pointer; }
-  .ghost:hover { border-color:var(--sky); }
-  .ghost.sm { height:36px; padding:0 .9rem; font-size:.88rem; }
-  .link { background:none; border:none; color:var(--text); font-weight:500; font-size:1rem; cursor:pointer; padding:.5rem; }
-  main { padding:1.5rem clamp(1rem,4vw,3rem) 4rem; display:flex; flex-direction:column; gap:2rem; }
-  .hero { min-height:300px; border-radius:20px; position:relative; overflow:hidden; display:flex; align-items:flex-end; background:linear-gradient(110deg,#0C4A6E,#1E3A5F 55%,#7A4A22); }
-  .hero::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(15,23,42,.9),rgba(15,23,42,0) 70%); }
-  .hero-body { position:relative; padding:2rem; max-width:560px; }
-  .tag { display:inline-block; background:var(--copper); color:#2A1608; font-weight:700; font-size:.85rem; padding:.25rem .75rem; border-radius:999px; }
-  .tag.on-air { background:var(--bad); color:#2B0A0A; }
-  .hero h1 { font-size:clamp(1.8rem,5vw,2.8rem); font-weight:800; line-height:1.05; margin:.6rem 0 1rem; }
-  .row h2 { font-size:1.35rem; font-weight:700; margin-bottom:.7rem; }
-  .cards { display:flex; gap:.9rem; overflow-x:auto; padding-bottom:.6rem; scroll-snap-type:x proximity; }
-  .card { flex:none; width:220px; background:none; border:none; color:inherit; text-align:left; cursor:pointer; scroll-snap-align:start; }
-  .poster { width:220px; height:124px; border-radius:10px; position:relative; overflow:hidden; border:1px solid var(--line); display:flex; align-items:flex-end; padding:.6rem; font-weight:800; font-size:1.05rem; line-height:1.1; transition:transform .15s, border-color .15s; }
-  .card:hover .poster { transform:translateY(-3px); border-color:var(--sky); }
-  .cap { margin-top:.45rem; font-weight:500; font-size:.92rem; color:#CBD5E1; }
-  .live { position:absolute; left:8px; top:8px; display:flex; align-items:center; gap:6px; background:rgba(15,23,42,.88); padding:3px 10px; border-radius:999px; font-size:.8rem; font-weight:700; }
-  .live i { width:8px; height:8px; border-radius:50%; background:var(--bad); }
-  .bar { position:absolute; left:10px; right:10px; bottom:8px; height:4px; border-radius:4px; background:rgba(255,255,255,.25); }
-  .bar b { display:block; height:100%; border-radius:4px; background:var(--sky); }
-  .empty { color:var(--muted); padding:3rem 1rem; text-align:center; }
-  dialog { margin:auto; border:1px solid var(--line); border-radius:16px; background:var(--panel); color:var(--text); padding:1.6rem; width:min(480px,92vw); }
-  dialog::backdrop { background:rgba(2,6,23,.8); }
-  dialog.wide { width:min(960px,96vw); padding:1rem; }
+  :focus-visible { outline:2px solid var(--deep); outline-offset:2px; }
+  .glass { background:linear-gradient(135deg,rgba(255,255,255,.38),rgba(173,216,230,.2)); backdrop-filter:blur(22px) saturate(1.4); -webkit-backdrop-filter:blur(22px) saturate(1.4); border:1px solid rgba(255,255,255,.6); box-shadow:0 8px 32px rgba(11,37,64,.12); }
+  svg.i { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  svg.f { fill:currentColor; stroke:none; }
+
+  header { position:sticky; top:12px; z-index:30; margin:12px clamp(.7rem,3vw,2rem) 0; padding:.6rem .8rem .6rem 1.2rem; border-radius:22px; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .brand { font-weight:800; font-size:1.55rem; letter-spacing:.06em; margin-right:auto; }
+  .brand span { color:var(--deep); }
+  nav { display:flex; gap:.3rem; }
+  nav button { background:none; border:none; font-weight:500; font-size:1rem; color:var(--mut); padding:.55rem 1rem; border-radius:999px; cursor:pointer; transition:.15s; }
+  nav button:hover { color:var(--ink); background:rgba(255,255,255,.35); }
+  nav button.on { color:var(--ink); font-weight:700; background:rgba(255,255,255,.55); }
+  .acts { display:flex; align-items:center; gap:.5rem; margin-left:auto; position:relative; }
+  .ic { width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.35); color:var(--ink); display:grid; place-items:center; cursor:pointer; }
+  .ic:hover { background:rgba(255,255,255,.65); }
+  #q { width:0; opacity:0; padding:0; border:none; height:42px; border-radius:999px; background:rgba(255,255,255,.55); color:var(--ink); font-size:.95rem; transition:width .25s,opacity .2s,padding .25s; }
+  #q.on { width:190px; opacity:1; padding:0 1rem; }
+  .cap { display:flex; align-items:center; gap:.5rem; padding:.2rem .9rem .2rem .2rem; border-radius:999px; background:rgba(255,255,255,.4); font-weight:500; font-size:.92rem; }
+  .ava { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.85rem; color:#fff; background:linear-gradient(140deg,var(--deep),#3A9AD0); }
+  .btn { height:44px; padding:0 1.4rem; border:none; border-radius:12px; background:var(--ink); color:#E8F6FB; font-weight:700; font-size:.98rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; transition:.15s; }
+  .btn:hover { background:var(--deep); } .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn.lt { background:var(--base); color:var(--ink); } .btn.lt:hover { background:#D3ECF5; }
+  .ghost { height:44px; padding:0 1.2rem; border:1.5px solid currentColor; border-radius:12px; background:transparent; color:inherit; font-weight:700; font-size:.92rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; }
+  .ghost:hover { background:rgba(255,255,255,.2); }
+  .ghost.sm { height:36px; padding:0 .9rem; font-size:.85rem; }
+  .menu { position:absolute; top:calc(100% + 12px); right:0; width:230px; padding:.5rem; border-radius:18px; display:flex; flex-direction:column; transform-origin:top right; animation:pop .18s ease-out; }
+  .menu button { background:none; border:none; text-align:left; padding:.7rem .9rem; border-radius:12px; font-size:.97rem; font-weight:500; color:var(--ink); cursor:pointer; }
+  .menu button:hover { background:rgba(255,255,255,.55); }
+  @keyframes pop { from { opacity:0; transform:scale(.94) translateY(-6px); } }
+
+  main { padding:1.2rem clamp(.7rem,3vw,2rem) 4rem; display:flex; flex-direction:column; gap:1.8rem; }
+  .chips { display:flex; gap:.5rem; overflow-x:auto; padding:.55rem .7rem; border-radius:999px; scrollbar-width:none; }
+  .chips button { flex:none; border:1px solid rgba(255,255,255,.7); background:rgba(255,255,255,.25); color:var(--ink); font-weight:500; font-size:.92rem; padding:.5rem 1.1rem; border-radius:999px; cursor:pointer; transition:.15s; }
+  .chips button:hover { background:rgba(255,255,255,.6); }
+  .chips button.on { background:var(--ink); color:#E8F6FB; border-color:var(--ink); font-weight:700; }
+  .chips em { flex:none; align-self:center; font-style:normal; font-weight:800; color:var(--deep); padding:0 .5rem 0 .6rem; }
+  .hero { position:relative; min-height:clamp(320px,48vh,460px); border-radius:28px; overflow:hidden; display:flex; align-items:flex-end; color:#fff; background:linear-gradient(120deg,#06243F,#0E4D7A 55%,#2B2A5C); isolation:isolate; }
+  .hero::before { content:''; position:absolute; inset:0; z-index:-1; background:radial-gradient(520px 320px at 80% 15%,rgba(173,216,230,.5),transparent 65%),repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.04) 46px 48px); }
+  .hero.live::before { background:radial-gradient(520px 320px at 80% 15%,rgba(229,72,77,.5),transparent 65%),radial-gradient(500px 300px at 60% 95%,rgba(173,216,230,.4),transparent 65%),repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.04) 46px 48px); }
+  .hero::after { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,rgba(4,18,34,.85),rgba(4,18,34,.1) 70%); }
+  .hb { padding:clamp(1.4rem,4vw,2.8rem); max-width:640px; }
+  .badge { display:inline-flex; align-items:center; gap:.45rem; padding:.28rem .85rem; border-radius:999px; font-weight:700; font-size:.85rem; background:rgba(173,216,230,.25); border:1px solid rgba(255,255,255,.5); }
+  .badge.on-air { background:var(--live); border-color:transparent; }
+  .badge i { width:8px; height:8px; border-radius:50%; background:#fff; animation:blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity:.3; } }
+  .hero h1 { font-size:clamp(2.3rem,6vw,4.2rem); font-weight:800; line-height:1; letter-spacing:-.02em; margin:.9rem 0 .7rem; }
+  .hero p { color:#D3E8F2; max-width:46ch; margin-bottom:1.5rem; line-height:1.5; }
+  .hero .btn { height:50px; padding:0 1.8rem; font-size:1.03rem; }
+  .hero .ghost { height:50px; color:#fff; }
+  .row h2 { font-size:1.3rem; font-weight:800; margin-bottom:.8rem; display:flex; align-items:center; gap:.6rem; }
+  .row h2 .dot { width:9px; height:9px; border-radius:50%; background:var(--live); box-shadow:0 0 0 4px rgba(229,72,77,.22); }
+  .cards { display:flex; gap:1rem; overflow-x:auto; padding:.4rem .3rem 1rem; scroll-snap-type:x proximity; scrollbar-width:thin; scrollbar-color:rgba(11,37,64,.3) transparent; }
+  .cards.grid { flex-wrap:wrap; overflow:visible; }
+  .card { flex:none; width:236px; background:none; border:none; color:inherit; text-align:left; cursor:pointer; scroll-snap-align:start; }
+  .poster { position:relative; aspect-ratio:16/10; border-radius:18px; overflow:hidden; border:1px solid rgba(255,255,255,.7); display:flex; align-items:flex-end; justify-content:flex-end; padding:.5rem .9rem; box-shadow:0 6px 18px rgba(11,37,64,.18); transition:transform .18s,box-shadow .18s; }
+  .poster b { font-size:5rem; font-weight:800; line-height:.8; color:rgba(255,255,255,.2); }
+  .chip { position:absolute; left:10px; top:10px; padding:.2rem .65rem; border-radius:999px; font-size:.76rem; font-weight:700; color:var(--ink); background:rgba(255,255,255,.7); backdrop-filter:blur(6px); }
+  .chip.live { background:var(--live); color:#fff; }
+  .go { position:absolute; left:10px; bottom:10px; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.85); color:var(--ink); display:grid; place-items:center; opacity:0; transform:scale(.8); transition:.18s; }
+  .go svg { width:13px; height:13px; margin-left:2px; }
+  .card:hover .poster, .card:focus-visible .poster { transform:translateY(-4px); box-shadow:0 16px 30px rgba(11,37,64,.28); }
+  .card:hover .go, .card:focus-visible .go { opacity:1; transform:none; }
+  .ct { margin-top:.6rem; font-weight:700; font-size:.98rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cs { color:var(--mut); font-size:.85rem; }
+  .bar { position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.35); }
+  .bar u { display:block; height:100%; background:var(--base); }
+  .empty { color:var(--mut); padding:3rem 1rem; text-align:center; }
+
+  dialog { margin:auto; border:1px solid rgba(255,255,255,.7); border-radius:22px; color:var(--ink); padding:1.6rem; width:min(480px,92vw); background:linear-gradient(135deg,rgba(236,247,252,.92),rgba(173,216,230,.85)); backdrop-filter:blur(24px); box-shadow:0 24px 60px rgba(11,37,64,.35); }
+  dialog::backdrop { background:rgba(6,24,44,.55); backdrop-filter:blur(5px); }
+  dialog.wide { width:min(1000px,96vw); padding:.9rem; border-radius:16px; background:rgba(8,22,40,.7); color:#E8F6FB; border-color:rgba(173,216,230,.35); }
   dialog h2 { font-size:1.5rem; font-weight:800; margin-bottom:.3rem; }
-  dialog p { color:var(--muted); margin-bottom:1rem; }
-  .inp { height:48px; width:100%; padding:0 .9rem; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-size:1rem; }
-  .inp:focus { outline:none; border-color:var(--sky); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
+  dialog p { color:var(--mut); margin-bottom:1rem; }
+  dialog.wide p { color:#B7D3E3; }
+  .inp { height:48px; width:100%; padding:0 .9rem; border-radius:12px; border:1px solid rgba(11,37,64,.2); background:rgba(255,255,255,.7); color:var(--ink); font-size:1rem; }
+  .inp:focus { outline:none; border-color:var(--deep); box-shadow:0 0 0 3px rgba(14,77,122,.2); }
   .phone { display:flex; gap:.5rem; margin-bottom:.8rem; }
-  .cc { height:48px; padding:0 .9rem; display:flex; align-items:center; border-radius:10px; border:1px solid var(--line); background:var(--bg); }
-  .plan { margin:1rem 0; padding:1.1rem; border-radius:12px; border:1px solid rgba(56,189,248,.45); background:rgba(56,189,248,.07); }
-  .plan strong { font-size:1.9rem; color:#7DD3FC; }
-  .plan small { color:var(--muted); font-size:.95rem; }
-  .msg { min-height:1.4rem; margin-top:.8rem; font-size:.95rem; }
-  .msg.err { color:#FCA5A5; } .msg.ok { color:#6EE7B7; }
+  .cc { height:48px; padding:0 .9rem; display:flex; align-items:center; border-radius:12px; background:rgba(255,255,255,.7); }
+  .plan { margin:1rem 0; padding:1.1rem; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.8); }
+  .plan strong { font-size:2rem; color:var(--deep); } .plan small { color:var(--mut); } .plan div { font-size:.92rem; margin-top:.2rem; }
+  .msg { min-height:1.4rem; margin-top:.8rem; font-size:.95rem; } .msg.err { color:#B42318; } .msg.ok { color:#067647; }
   .stack { display:flex; flex-direction:column; gap:.6rem; }
   .step { display:none; } .step.on { display:block; }
-  .x { float:right; background:none; border:none; color:var(--muted); font-size:1.6rem; cursor:pointer; line-height:1; width:44px; height:44px; }
-  /* player */
-  .ptitle { display:flex; align-items:center; gap:.7rem; font-weight:700; padding:.2rem .3rem .7rem; min-height:44px; }
-  .onair { display:inline-flex; align-items:center; gap:6px; background:rgba(248,113,113,.15); color:#FCA5A5; border:1px solid rgba(248,113,113,.5); padding:2px 10px; border-radius:999px; font-size:.8rem; }
-  .onair i { width:8px; height:8px; border-radius:50%; background:var(--bad); animation:blink 1.4s ease-in-out infinite; }
-  @keyframes blink { 50% { opacity:.3; } }
-  .stage { position:relative; }
-  video { width:100%; max-height:72vh; border-radius:10px; background:#000; display:block; aspect-ratio:16/9; }
-  .overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.8rem; background:rgba(0,0,0,.55); border-radius:10px; pointer-events:none; text-align:center; padding:1rem; }
-  .spin { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.25); border-top-color:var(--sky); animation:spin .9s linear infinite; }
+  .x { float:right; background:none; border:none; color:inherit; opacity:.7; font-size:1.6rem; cursor:pointer; line-height:1; width:44px; height:44px; }
+  .ptitle { display:flex; align-items:center; gap:.7rem; font-weight:700; padding:.2rem .3rem .7rem; min-height:44px; flex-wrap:wrap; }
+  .ptitle .ghost { margin-left:auto; margin-right:2.4rem; color:var(--base); }
+  .onair { display:inline-flex; align-items:center; gap:6px; background:rgba(229,72,77,.2); color:#FFB4B6; border:1px solid rgba(229,72,77,.6); padding:2px 10px; border-radius:999px; font-size:.8rem; }
+  .onair i { width:8px; height:8px; border-radius:50%; background:var(--live); animation:blink 1.4s ease-in-out infinite; }
+  .stage { position:relative; border-radius:16px; overflow:hidden; background:#000; }
+  video { width:100%; max-height:74vh; display:block; aspect-ratio:16/9; }
+  .overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.8rem; background:rgba(0,0,0,.5); pointer-events:none; text-align:center; padding:1rem; }
+  .spin { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.25); border-top-color:var(--base); animation:spin .9s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
-  .pbar { display:flex; gap:.6rem; justify-content:flex-end; padding-top:.7rem; min-height:44px; }
-  @media (max-width:700px) { nav { display:none; } header { gap:1rem; } .brand { flex:1; } }
+  .ctrl { position:absolute; left:12px; right:12px; bottom:12px; padding:.55rem .8rem .5rem; border-radius:16px; color:#E8F6FB; background:rgba(8,22,40,.45); border-color:rgba(173,216,230,.35); transition:opacity .25s; }
+  .stage.idle .ctrl { opacity:0; }
+  .tl { position:relative; }
+  .tip { position:absolute; bottom:22px; transform:translateX(-50%); background:rgba(8,22,40,.9); color:var(--base); font-size:.78rem; font-weight:700; padding:.2rem .55rem; border-radius:8px; pointer-events:none; }
+  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:5px; background:rgba(173,216,230,.3); cursor:pointer; accent-color:var(--base); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--base); box-shadow:0 0 0 4px rgba(173,216,230,.25); }
+  .cr { display:flex; align-items:center; gap:.3rem; margin-top:.35rem; flex-wrap:wrap; }
+  .cr button, .cr select { background:none; border:none; color:var(--base); height:36px; min-width:36px; padding:0 .5rem; border-radius:10px; cursor:pointer; font-weight:700; font-size:.85rem; display:inline-grid; place-items:center; }
+  .cr button:hover, .cr select:hover { background:rgba(173,216,230,.18); }
+  .cr select option { color:#0B2540; }
+  .cr #volr { width:80px; } .cr span { font-size:.85rem; font-variant-numeric:tabular-nums; } .sp { flex:1; }
+  .stage.islive .vod, .stage:not(.islive) .lv { display:none; }
+  @media (max-width:760px) { header { gap:.4rem; padding:.5rem .6rem .5rem 1rem; } nav { order:3; width:100%; justify-content:center; } .brand { font-size:1.35rem; } .card { width:200px; } .cap b { display:none; } #q.on { width:130px; } }
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
-<header>
-  <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg></span>TAWA</a>
-  <nav><a href="#live">Live</a><a href="#tv">TV Shows</a><a href="#movies">Movies</a></nav>
-  <div id="authArea"></div>
+<header class="glass">
+  <a class="brand" href="/">TA<span>WA</span></a>
+  <nav id="nav" aria-label="Main"></nav>
+  <div class="acts">
+    <input id="q" type="search" placeholder="Search titles" aria-label="Search titles">
+    <button class="ic" id="sBtn" type="button" aria-label="Search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+    <div id="topAuth" style="display:flex;align-items:center;gap:.5rem"></div>
+    <button class="ic" id="kBtn" type="button" aria-label="More options" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg></button>
+    <div class="menu glass" id="menu" hidden>
+      <button type="button" data-m="acct">My Account</button>
+      <button type="button" data-m="bill">Billing &amp; Plan</button>
+      <button type="button" data-m="list">Watchlist</button>
+      <button type="button" data-m="out" id="outBtn">Sign Out</button>
+    </div>
+  </div>
 </header>
 
 <main>
+  <div style="display:flex;flex-direction:column;gap:.6rem">
+    <div class="chips glass" id="chipsG" role="group" aria-label="General filters"></div>
+    <div class="chips glass" id="chipsX" role="group" aria-label="Gaming filters"></div>
+  </div>
   <section class="hero" id="hero" hidden>
-    <div class="hero-body">
-      <span class="tag" id="heroTag">New on TAWA</span>
+    <div class="hb">
+      <span class="badge" id="heroTag"></span>
       <h1 id="heroTitle"></h1>
-      <button class="btn" id="heroPlay" type="button">Watch now</button>
+      <p id="heroText"></p>
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn lt" id="heroPlay" type="button"><svg class="i f" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 3l15 9-15 9z"/></svg><span id="heroBtn">Watch now</span></button>
+        <button class="ghost" id="heroList" type="button">+ My List</button>
+      </div>
     </div>
   </section>
   <div id="rows"><p class="empty">Loading…</p></div>
@@ -112,33 +175,57 @@
   <div class="step" id="s3">
     <h2>Subscribe to watch</h2>
     <p>One plan. Cancel by simply not renewing.</p>
-    <div class="plan"><strong>K15</strong> <small>/ month</small><div class="cap">All movies, shows and live events.</div></div>
+    <div class="plan"><strong>K15</strong> <small>/ month</small><div>All movies, shows and live events.</div></div>
     <button class="btn" style="width:100%" id="payBtn" type="button">Pay K15 with mobile money</button>
-    <p style="margin:.8rem 0 0;font-size:.9rem">You get a prompt on your phone to approve the payment (MTN or Airtel).</p>
+    <p style="margin:.8rem 0 0;font-size:.9rem">You get a prompt on your phone to approve the payment.</p>
+  </div>
+  <div class="step" id="s4">
+    <h2>My account</h2>
+    <p id="acctText"></p>
+    <div class="stack"><button class="btn" id="acctSub" type="button">Subscribe K15</button></div>
   </div>
   <div class="msg" id="authMsg" role="status" aria-live="polite"></div>
 </dialog>
 
 <dialog id="playDlg" class="wide" aria-label="Video player">
   <button class="x" type="button" aria-label="Close player" data-close="playDlg">&times;</button>
-  <div class="ptitle"><span id="playTitle"></span><span class="onair" id="liveTag" hidden><i></i>Live</span></div>
-  <div class="stage">
-    <video id="player" controls playsinline></video>
+  <div class="ptitle"><span id="playTitle"></span><span class="onair" id="liveTag" hidden><i></i>Live</span><button class="ghost sm vod" id="listBtn" type="button">+ My List</button></div>
+  <div class="stage idle" id="stage">
+    <video id="player" playsinline></video>
     <div class="overlay" id="overlay" hidden role="status"><div class="spin" id="spin"></div><span id="ovText"></span></div>
-  </div>
-  <div class="pbar">
-    <button class="ghost sm" id="unmuteBtn" type="button" hidden>Tap to unmute</button>
-    <button class="ghost sm" id="edgeBtn" type="button" hidden>Jump to live</button>
+    <div class="ctrl glass" id="ctrl">
+      <div class="tl vod"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span class="tip" id="tip" hidden></span></div>
+      <div class="cr">
+        <button id="pp" type="button" aria-label="Play or pause"><svg class="i f" viewBox="0 0 24 24"><path id="ppPath" d="M5 3l15 9-15 9z"/></svg></button>
+        <button class="vod" id="b10" type="button" aria-label="Back 10 seconds">&minus;10s</button>
+        <button class="vod" id="f10" type="button" aria-label="Forward 10 seconds">+10s</button>
+        <span class="vod" id="time">0:00 / 0:00</span>
+        <button class="lv" id="edge" type="button" hidden>Jump to live</button>
+        <i class="sp"></i>
+        <button class="vod" id="spd" type="button" aria-label="Playback speed">1&times;</button>
+        <select class="lv" id="qual" aria-label="Quality" hidden></select>
+        <button id="vol" type="button" aria-label="Mute"><svg class="i f" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path id="vw" class="" fill="none" stroke="currentColor" stroke-width="2" d="M16 8a5 5 0 0 1 0 8"/></svg></button>
+        <input type="range" id="volr" min="0" max="1" step=".05" value="1" aria-label="Volume">
+        <button id="pip" type="button" aria-label="Picture in picture"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3z"/><path class="f" d="M12 11h7v5h-7z"/></svg></button>
+        <button id="fs" type="button" aria-label="Fullscreen"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div>
+    </div>
   </div>
 </dialog>
 
 <script>
   const $ = (id) => document.getElementById(id);
   const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows'];
+  const CAT = { trending: 'Trending Now', movies: 'Popular Movies', series: 'TV Shows', walk: 'Walkthroughs', games: 'Trending Games' };
+  const GEN = { all: 'All Videos', trending: 'Trending', new: 'New Releases' };
+  const GAME = { gaming: 'All Gaming', walk: 'Walkthroughs', games: 'Trending Games' };
+  const GAMECATS = ['Walkthroughs', 'Trending Games'];
+  const LABEL = Object.assign({ movies: 'Movies', series: 'Series' }, GEN, GAME);
+  const NAV = { all: 'Home', movies: 'Movies', series: 'Series', live: 'Live', list: 'My List' };
   let me = { signed_in: false, subscribed: false, price: 15 };
-  let library = [], live = { is_live: false };
-  let lastSave = 0, hls = null, retryTimer = null, watchingLive = false;
-  const vid = $('player');
+  let library = [], live = { is_live: false }, filter = 'all', q = '', current = null;
+  let lastSave = 0, hls = null, retryTimer = null, watchingLive = false, idleTimer = null;
+  const vid = $('player'), stage = $('stage');
 
   /* ---------- helpers ---------- */
   const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; } };
@@ -148,102 +235,121 @@
       return { r, d: await r.json().catch(() => ({})) };
     } catch (e) { return { r: { ok: false, status: 0 }, d: { error: 'No connection. Check your internet and try again.' } }; }
   };
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
+  const store = (k) => { try { return JSON.parse(localStorage.getItem(k) || (k === 'tawa_list' ? '[]' : '{}')); } catch (e) { return k === 'tawa_list' ? [] : {}; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* blocked */ } };
+  const fmt = (s) => { if (!isFinite(s)) return '0:00'; s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? h + ':' + String(m).padStart(2, '0') + ':' + x : m + ':' + x; };
+  const fmtDate = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
+  const hue = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   function say(text, kind) { const m = $('authMsg'); m.textContent = text || ''; m.className = 'msg ' + (kind || ''); }
-  function hue(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
-  function progress() { try { return JSON.parse(localStorage.getItem('tawa_progress') || '{}'); } catch (e) { return {}; } }
-  function saveProgress(p) { try { localStorage.setItem('tawa_progress', JSON.stringify(p)); } catch (e) { /* blocked */ } }
 
-  /* ---------- header ---------- */
+  /* ---------- header, menu, filters ---------- */
+  function renderBars() {
+    const nav = $('nav');
+    nav.textContent = '';
+    const fill = (box, label, map) => { box.textContent = ''; box.append(el('em', '', label)); Object.entries(map).forEach(([k, t]) => { const b = el('button', filter === k ? 'on' : '', t); b.type = 'button'; b.onclick = () => setFilter(k); box.append(b); }); };
+    fill(nav, '', NAV); nav.firstChild.remove();
+    fill($('chipsG'), 'General', GEN);
+    fill($('chipsX'), 'Gaming', GAME);
+  }
+  function setFilter(k) { filter = k; renderBars(); renderRows(); }
   function renderAuth() {
-    const a = $('authArea');
-    a.textContent = '';
+    const top = $('topAuth'); top.textContent = '';
+    $('outBtn').hidden = !me.signed_in;
     if (me.signed_in) {
-      const who = document.createElement('span');
-      who.style.cssText = 'color:var(--muted);margin-right:.5rem';
-      who.textContent = me.phone;
-      const out = document.createElement('button');
-      out.className = 'link'; out.textContent = 'Log out';
-      out.onclick = async () => { await post('/auth/logout'); location.reload(); };
-      a.append(who);
-      if (!me.subscribed) {
-        const sub = document.createElement('button');
-        sub.className = 'btn'; sub.textContent = 'Subscribe K' + me.price; sub.style.marginRight = '.5rem';
-        sub.onclick = () => openAuth(3);
-        a.append(sub);
-      }
-      a.append(out);
+      const c = el('div', 'cap'); c.append(el('div', 'ava', (me.phone || '?').slice(-2)), el('b', '', me.phone)); top.append(c);
+      if (!me.subscribed) { const s = el('button', 'btn', 'Subscribe K' + me.price); s.onclick = () => openAuth(3); top.append(s); }
     } else {
-      const si = document.createElement('button');
-      si.className = 'link'; si.textContent = 'Sign in'; si.onclick = () => openAuth(1);
-      const sub = document.createElement('button');
-      sub.className = 'btn'; sub.textContent = 'Subscribe K' + me.price; sub.onclick = () => openAuth(1);
-      a.append(si, sub);
+      const g = el('button', 'ghost', 'Sign in'); g.onclick = () => openAuth(1);
+      const s = el('button', 'btn', 'Subscribe K' + me.price); s.onclick = () => openAuth(1);
+      top.append(g, s);
     }
   }
+  $('sBtn').onclick = () => { const i = $('q'); i.classList.toggle('on'); if (i.classList.contains('on')) i.focus(); else { i.value = ''; q = ''; renderRows(); } };
+  $('q').oninput = (e) => { q = e.target.value.trim().toLowerCase(); renderRows(); };
+  $('kBtn').onclick = (e) => { e.stopPropagation(); const m = $('menu'); m.hidden = !m.hidden; $('kBtn').setAttribute('aria-expanded', String(!m.hidden)); };
+  document.addEventListener('click', (e) => { if (!e.target.closest('#menu')) { $('menu').hidden = true; $('kBtn').setAttribute('aria-expanded', 'false'); } });
+  $('menu').onclick = async (e) => {
+    const m = e.target.dataset.m; if (!m) return; $('menu').hidden = true;
+    if (m === 'acct') openAuth(me.signed_in ? 4 : 1);
+    if (m === 'bill') openAuth(!me.signed_in ? 1 : me.subscribed ? 4 : 3);
+    if (m === 'list') setFilter('list');
+    if (m === 'out') { await post('/auth/logout'); location.reload(); }
+  };
 
   /* ---------- rows ---------- */
   function card(title, sub, opts, onClick) {
-    const b = document.createElement('button');
-    b.className = 'card'; b.type = 'button'; b.onclick = onClick;
-    const p = document.createElement('div');
-    p.className = 'poster';
-    p.style.background = 'linear-gradient(150deg,hsl(' + hue(title) + ',55%,28%),#172033)';
-    p.textContent = title;
-    if (opts.live) { const l = document.createElement('span'); l.className = 'live'; const i = document.createElement('i'); l.append(i, 'Live'); p.appendChild(l); }
-    if (opts.pct) { const bar = document.createElement('div'); bar.className = 'bar'; const f = document.createElement('b'); f.style.width = opts.pct + '%'; bar.appendChild(f); p.appendChild(bar); }
-    const c = document.createElement('div');
-    c.className = 'cap'; c.textContent = sub;
-    b.append(p, c);
+    const b = el('button', 'card'); b.type = 'button'; b.onclick = onClick;
+    const p = el('div', 'poster'), h = hue(title);
+    p.style.background = 'linear-gradient(145deg,hsl(' + h + ',60%,38%),hsl(' + ((h + 45) % 360) + ',55%,20%))';
+    p.append(el('b', '', (title || '?').trim().charAt(0).toUpperCase()));
+    if (opts.live) p.append(el('span', 'chip live', 'Live')); else if (opts.chip) p.append(el('span', 'chip', opts.chip));
+    const go = el('span', 'go'); go.innerHTML = '<svg class="i f" viewBox="0 0 24 24"><path d="M5 3l15 9-15 9z"/></svg>'; p.append(go);
+    if (opts.pct) { const bar = el('div', 'bar'), f = el('u'); f.style.width = opts.pct + '%'; bar.append(f); p.append(bar); }
+    b.append(p, el('div', 'ct', title), el('div', 'cs', sub));
     return b;
   }
-  function addRow(root, name, id, cards) {
+  function addRow(root, name, id, cards, o) {
     if (!cards.length) return;
-    const s = document.createElement('section');
-    s.className = 'row'; if (id) s.id = id;
-    const h = document.createElement('h2'); h.textContent = name;
-    const w = document.createElement('div'); w.className = 'cards';
-    cards.forEach((c) => w.appendChild(c));
+    const s = el('section', 'row'); if (id) { s.id = id; s.style.scrollMarginTop = '100px'; }
+    const h = el('h2'); if (o && o.live) h.append(el('span', 'dot')); h.append(name);
+    const w = el('div', 'cards' + (o && o.grid ? ' grid' : '')); cards.forEach((c) => w.appendChild(c));
     s.append(h, w); root.appendChild(s);
   }
+  const vcards = (list) => list.map((v) => card(v.title, v.category, { chip: v.category === 'Trending Now' ? 'Trending' : '' }, () => play(v)));
   function renderRows() {
     const root = $('rows'); root.textContent = '';
-    if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Watching live', { live: true }, playLive)]);
-    const prog = progress();
-    const resume = library.filter((v) => prog[v.id] && prog[v.id].t > 5 && prog[v.id].t < prog[v.id].d * 0.95)
-      .map((v) => card(v.title, 'Pick up where you left off', { pct: Math.round(prog[v.id].t / prog[v.id].d * 100) }, () => play(v)));
-    addRow(root, 'Continue Watching', 'continue', resume);
-    const cats = [...new Set(library.map((v) => v.category))];
-    const names = ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n)));
-    names.forEach((n) => {
-      const id = n === 'TV Shows' ? 'tv' : n === 'Popular Movies' ? 'movies' : null;
-      addRow(root, n, id, library.filter((v) => v.category === n).map((v) => card(v.title, n, {}, () => play(v))));
-    });
-    if (!root.children.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'New titles are on the way. Check back soon.'; root.appendChild(p); }
+    const src = library.filter((v) => !q || v.title.toLowerCase().includes(q));
+    if (filter === 'all') {
+      if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Streaming now', { live: true }, playLive)], { live: true });
+      const prog = store('tawa_progress');
+      addRow(root, 'Continue Watching', 'continue', src.filter((v) => prog[v.id] && prog[v.id].t > 5 && prog[v.id].t < prog[v.id].d * 0.95)
+        .map((v) => card(v.title, 'Pick up where you left off', { pct: Math.round(prog[v.id].t / prog[v.id].d * 100) }, () => play(v))));
+      const cats = [...new Set(src.map((v) => v.category))];
+      ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n))).forEach((n) => addRow(root, n === 'Trending Now' ? 'Trending Now' : n, null, vcards(src.filter((v) => v.category === n))));
+    } else if (filter === 'new') addRow(root, 'New Releases', null, vcards(src.slice(0, 12)), { grid: true });
+    else if (filter === 'list') { const ids = store('tawa_list'); addRow(root, 'My List', null, vcards(src.filter((v) => ids.includes(v.id))), { grid: true }); }
+    else if (filter === 'live') { if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Streaming now', { live: true }, playLive)], { live: true, grid: true }); }
+    else if (filter === 'gaming') addRow(root, 'All Gaming', null, vcards(src.filter((v) => GAMECATS.includes(v.category))), { grid: true });
+    else addRow(root, LABEL[filter], null, vcards(src.filter((v) => v.category === CAT[filter])), { grid: true });
+    if (!root.children.length) root.append(el('p', 'empty', filter === 'list' ? 'Your list is empty. Tap + My List on a title to save it.' : filter === 'live' ? 'No live event right now. Check back soon.' : q ? 'No titles match your search.' : 'New titles are on the way. Check back soon.'));
     renderHero();
   }
   function renderHero() {
-    const hero = $('hero');
-    if (live.is_live) {
-      hero.hidden = false; $('heroTag').textContent = 'Live now'; $('heroTag').className = 'tag on-air';
-      $('heroTitle').textContent = live.title || 'TAWA Live'; $('heroPlay').textContent = 'Watch live'; $('heroPlay').onclick = playLive;
-    } else if (library.length) {
-      hero.hidden = false; $('heroTag').textContent = 'New on TAWA'; $('heroTag').className = 'tag';
-      $('heroTitle').textContent = library[0].title; $('heroPlay').textContent = 'Watch now'; $('heroPlay').onclick = () => play(library[0]);
+    const hero = $('hero'), show = (filter === 'all' || filter === 'live') && !q;
+    if (show && live.is_live) {
+      hero.hidden = false; hero.className = 'hero live';
+      $('heroTag').className = 'badge on-air'; $('heroTag').textContent = ''; $('heroTag').append(el('i'), 'Live now');
+      $('heroTitle').textContent = live.title || 'TAWA Live';
+      $('heroText').textContent = 'Streaming right now for TAWA subscribers. Tap to join the broadcast.';
+      $('heroBtn').textContent = 'Watch live'; $('heroPlay').onclick = playLive; $('heroList').hidden = true;
+    } else if (show && filter === 'all' && library.length) {
+      const v = library[0]; hero.hidden = false; hero.className = 'hero';
+      $('heroTag').className = 'badge'; $('heroTag').textContent = 'New on TAWA';
+      $('heroTitle').textContent = v.title;
+      $('heroText').textContent = 'Zambian movies, shows and live events, all in one place.';
+      $('heroBtn').textContent = 'Watch now'; $('heroPlay').onclick = () => play(v);
+      $('heroList').hidden = false; $('heroList').textContent = store('tawa_list').includes(v.id) ? '\u2713 In My List' : '+ My List';
+      $('heroList').onclick = () => { toggleList(v.id); renderHero(); };
     } else hero.hidden = true;
   }
+  function toggleList(id) { const l = store('tawa_list'), i = l.indexOf(id); if (i < 0) l.push(id); else l.splice(i, 1); save('tawa_list', l); }
 
-  /* ---------- sign in and subscribe ---------- */
+  /* ---------- sign in, subscribe, account ---------- */
   function openAuth(step) {
     if (step === 3 && !me.signed_in) step = 1;
-    if (me.signed_in && step === 1) step = me.subscribed ? 0 : 3;
-    if (!step) return;
-    $('s1').classList.toggle('on', step === 1); $('s3').classList.toggle('on', step === 3);
+    if (me.signed_in && step === 1) step = me.subscribed ? 4 : 3;
+    ['s1', 's3', 's4'].forEach((s) => $(s).classList.toggle('on', s === 's' + step));
+    if (step === 4) {
+      $('acctText').textContent = me.phone + (me.subscribed ? ' · Plan active until ' + fmtDate(me.paid_until) + '.' : ' · No active plan.');
+      $('acctSub').textContent = me.subscribed ? 'Add 30 more days (K' + me.price + ')' : 'Subscribe K' + me.price;
+      $('acctSub').onclick = () => openAuth(3);
+    }
     say('');
     const d = $('authDlg'); if (!d.open) d.showModal();
-    (step === 1 ? $('phone') : $('payBtn')).focus();
+    if (step === 1) $('phone').focus();
   }
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).close()));
-
   $('textBtn').onclick = async () => {
     $('textBtn').disabled = true; say('Sending your code…');
     const { r, d } = await post('/auth/send-code', { phone: $('phone').value });
@@ -272,27 +378,51 @@
     $('payBtn').disabled = false; say('We have not received your payment yet. If you paid, wait a minute and refresh.', 'err');
   };
 
-  /* ---------- player ---------- */
+  /* ---------- player controls ---------- */
+  const PLAY = 'M5 3l15 9-15 9z', PAUSE = 'M6 4h4v16H6zM14 4h4v16h-4z';
   function overlay(text, spin) { $('overlay').hidden = !text; $('ovText').textContent = text || ''; $('spin').hidden = spin === false; }
+  function wake() { stage.classList.remove('idle'); clearTimeout(idleTimer); if (!vid.paused) idleTimer = setTimeout(() => stage.classList.add('idle'), 2800); }
+  ['mousemove', 'touchstart', 'keydown'].forEach((ev) => stage.addEventListener(ev, wake));
+  $('pp').onclick = () => (vid.paused ? vid.play() : vid.pause());
+  vid.addEventListener('click', () => $('pp').click());
+  $('b10').onclick = () => { vid.currentTime = Math.max(0, vid.currentTime - 10); };
+  $('f10').onclick = () => { vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 10); };
+  $('spd').onclick = () => { const s = [1, 1.25, 1.5, 2, 0.75], n = s[(s.indexOf(vid.playbackRate) + 1) % s.length]; vid.playbackRate = n; $('spd').textContent = n + '\u00d7'; };
+  $('vol').onclick = () => { vid.muted = !vid.muted; };
+  $('volr').oninput = (e) => { vid.volume = +e.target.value; vid.muted = vid.volume === 0; };
+  $('pip').onclick = () => { if (document.pictureInPictureElement) document.exitPictureInPicture(); else if (document.pictureInPictureEnabled) vid.requestPictureInPicture().catch(() => {}); };
+  $('fs').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else if (stage.requestFullscreen) stage.requestFullscreen(); else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen(); };
+  $('edge').onclick = () => { if (hls && hls.liveSyncPosition) vid.currentTime = hls.liveSyncPosition; vid.play().catch(() => {}); };
+  $('qual').onchange = (e) => { if (hls) hls.currentLevel = +e.target.value; };
+  $('seek').oninput = (e) => { if (vid.duration) vid.currentTime = e.target.value / 1000 * vid.duration; };
+  $('seek').onmousemove = (e) => { const r = e.currentTarget.getBoundingClientRect(), p = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); $('tip').hidden = !vid.duration; $('tip').style.left = p * 100 + '%'; $('tip').textContent = fmt(p * vid.duration); };
+  $('seek').onmouseleave = () => { $('tip').hidden = true; };
+  $('listBtn').onclick = () => { if (current) { toggleList(current.id); $('listBtn').textContent = store('tawa_list').includes(current.id) ? '\u2713 In My List' : '+ My List'; } };
+  vid.addEventListener('timeupdate', () => {
+    if (watchingLive) { $('edge').hidden = !(hls && hls.liveSyncPosition && hls.liveSyncPosition - vid.currentTime > 12); return; }
+    if (vid.duration) $('seek').value = vid.currentTime / vid.duration * 1000;
+    $('time').textContent = fmt(vid.currentTime) + ' / ' + fmt(vid.duration);
+  });
+  vid.addEventListener('play', () => { $('ppPath').setAttribute('d', PAUSE); wake(); });
+  vid.addEventListener('pause', () => { $('ppPath').setAttribute('d', PLAY); wake(); });
+  vid.addEventListener('volumechange', () => { $('volr').value = vid.muted ? 0 : vid.volume; $('vw').style.opacity = vid.muted || vid.volume === 0 ? 0 : 1; });
+  vid.addEventListener('playing', () => overlay(''));
+  vid.addEventListener('waiting', () => { if ($('playDlg').open && !vid.ended) overlay('Buffering…'); });
+  vid.addEventListener('error', () => { if ($('playDlg').open && !watchingLive && vid.getAttribute('src')) overlay('This video could not be loaded. Try again in a moment.', false); });
+
   function stopPlayer() {
     clearTimeout(retryTimer);
     if (hls) { hls.destroy(); hls = null; }
     vid.ontimeupdate = vid.onloadedmetadata = vid.onended = null;
-    vid.pause(); vid.removeAttribute('src'); vid.load();
-    watchingLive = false;
-    overlay('');
-    ['liveTag', 'edgeBtn', 'unmuteBtn'].forEach((id) => { $(id).hidden = true; });
+    vid.pause(); vid.removeAttribute('src'); vid.load(); vid.playbackRate = 1; $('spd').textContent = '1\u00d7';
+    watchingLive = false; overlay(''); stage.classList.remove('islive'); stage.classList.add('idle');
+    ['liveTag', 'edge', 'qual'].forEach((id) => { $(id).hidden = true; });
   }
   async function startPlay() {
     try { await vid.play(); }
-    catch (e) { vid.muted = true; try { await vid.play(); $('unmuteBtn').hidden = false; } catch (e2) { overlay('Press play to start.', false); } }
+    catch (e) { vid.muted = true; try { await vid.play(); } catch (e2) { overlay('Press play to start.', false); } }
   }
   $('playDlg').addEventListener('close', stopPlayer);
-  $('unmuteBtn').onclick = () => { vid.muted = false; $('unmuteBtn').hidden = true; };
-  $('edgeBtn').onclick = () => { if (hls && hls.liveSyncPosition) vid.currentTime = hls.liveSyncPosition; vid.play().catch(() => {}); };
-  vid.addEventListener('playing', () => overlay(''));
-  vid.addEventListener('waiting', () => { if ($('playDlg').open && !vid.ended) overlay('Buffering…'); });
-  vid.addEventListener('error', () => { if ($('playDlg').open && !watchingLive && vid.getAttribute('src')) overlay('This video could not be loaded. Try again in a moment.', false); });
 
   async function play(v) {
     if (!me.signed_in) return openAuth(1);
@@ -301,20 +431,20 @@
     if (r.status === 401) return openAuth(1);
     if (r.status === 402) { me.subscribed = false; renderAuth(); return openAuth(3); }
     if (!r.ok) return alert(d.error || 'This video is not available right now.');
-    stopPlayer();
+    stopPlayer(); current = v;
     $('playTitle').textContent = v.title;
-    const saved = progress()[v.id];
+    $('listBtn').textContent = store('tawa_list').includes(v.id) ? '\u2713 In My List' : '+ My List';
+    const saved = store('tawa_progress')[v.id];
     vid.onloadedmetadata = () => { if (saved && saved.t > 5 && saved.t < vid.duration * 0.95) vid.currentTime = saved.t; };
     vid.ontimeupdate = () => {
       if (Date.now() - lastSave < 5000 || !vid.duration) return;
       lastSave = Date.now();
-      const p = progress(); p[v.id] = { t: vid.currentTime, d: vid.duration }; saveProgress(p);
+      const p = store('tawa_progress'); p[v.id] = { t: vid.currentTime, d: vid.duration }; save('tawa_progress', p);
     };
-    vid.onended = () => { const p = progress(); delete p[v.id]; saveProgress(p); };
+    vid.onended = () => { const p = store('tawa_progress'); delete p[v.id]; save('tawa_progress', p); };
     $('playDlg').showModal(); overlay('Loading…');
     vid.src = d.url; startPlay();
   }
-
   function loadHls() {
     return new Promise((res, rej) => {
       if (window.Hls) return res();
@@ -326,7 +456,13 @@
   function attachLive(url) {
     if (window.Hls && Hls.isSupported()) {
       hls = new Hls({ lowLatencyMode: true, liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, manifestLoadingMaxRetry: 4, manifestLoadingRetryDelay: 1500 });
-      hls.on(Hls.Events.MANIFEST_PARSED, startPlay);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        startPlay();
+        const q = $('qual'); q.textContent = '';
+        q.append(new Option('Auto', -1));
+        hls.levels.map((l, i) => ({ i, h: l.height })).filter((l) => l.h).sort((a, b) => b.h - a.h).forEach((l) => q.append(new Option(l.h + 'p', l.i)));
+        q.hidden = q.options.length < 3;
+      });
       hls.on(Hls.Events.ERROR, (ev, data) => {
         if (!data.fatal || !hls) return;
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
@@ -337,20 +473,20 @@
         else overlay('The live could not play. Close this window and try again.', false);
       });
       hls.loadSource(url); hls.attachMedia(vid);
-    } else { vid.src = url; startPlay(); }   // Safari and iPhones play HLS natively
+    } else { vid.src = url; startPlay(); }
   }
   async function playLive() {
     if (!me.signed_in) return openAuth(1);
     if (!me.subscribed) return openAuth(3);
     await refreshLive();
     if (!live.is_live || !live.hls_url) return alert('The live has ended.');
-    stopPlayer(); watchingLive = true;
+    stopPlayer(); watchingLive = true; current = null;
+    stage.classList.add('islive');
     $('playTitle').textContent = live.title || 'TAWA Live';
     $('liveTag').hidden = false;
     $('playDlg').showModal(); overlay('Connecting to the live…');
-    try { await loadHls(); } catch (e) { /* fall back to native playback */ }
+    try { await loadHls(); } catch (e) { /* native playback fallback */ }
     attachLive(live.hls_url);
-    vid.ontimeupdate = () => { $('edgeBtn').hidden = !(hls && hls.liveSyncPosition && hls.liveSyncPosition - vid.currentTime > 12); };
   }
 
   /* ---------- boot ---------- */
@@ -361,10 +497,11 @@
     renderRows();
   }
   (async () => {
+    renderBars();
     me = (await get('/me')).d; renderAuth(); $('textBtn').hidden = !me.sms;
     library = (await get('/api/library')).d || [];
     await refreshLive();
-    setInterval(refreshLive, 30000);   // a live appears or ends without a page reload
+    setInterval(refreshLive, 30000);
   })();
 </script>
 </body>
