@@ -12,7 +12,7 @@ from functools import wraps
 import boto3
 import requests
 from flask import Flask, render_template, render_template_string, request, jsonify, Response, session, redirect
-import sqlite3
+from pgcompat import sqlite3
 from werkzeug.utils import secure_filename
 from botocore.exceptions import ClientError
 
