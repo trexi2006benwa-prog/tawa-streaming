@@ -2,3 +2,4 @@ flask
 gunicorn
 boto3
 requests
+psycopg2-binary
