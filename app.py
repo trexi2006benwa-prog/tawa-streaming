@@ -109,7 +109,7 @@ init_db()
 # ---------------------------------------------------------------------------
 # Accounts (phone number + SMS code), K15 subscription, and live
 # ---------------------------------------------------------------------------
-PRICE_KWACHA = 15
+PRICE_KWACHA = 17
 SUBSCRIPTION_DAYS = 30
 
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
