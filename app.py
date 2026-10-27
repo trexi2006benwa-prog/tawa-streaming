@@ -109,7 +109,7 @@ init_db()
 # ---------------------------------------------------------------------------
 # Accounts (phone number + SMS code), K15 subscription, and live
 # ---------------------------------------------------------------------------
-PRICE_KWACHA = 17
+PRICE_KWACHA = 15
 SUBSCRIPTION_DAYS = 30
 
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -349,6 +349,9 @@ def pay_webhook():
     conn.close()
     if pay and done:  # only the first callback grants access
         grant_days(pay['phone'], SUBSCRIPTION_DAYS)
+        # Commission is recorded only after the verified payment callback succeeds.
+        # Manual/free admin grants do not create affiliate commissions.
+        record_affiliate_payment(pay['phone'], pay['amount'], pay['reference'])
     return jsonify({'ok': True})
 
 
@@ -851,6 +854,24 @@ def admin_panel():
   .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
   .empty strong { display: block; color: var(--text); font-size: 1.1rem; margin-bottom: 0.3rem; }
 
+  /* ---------- Affiliate management ---------- */
+  .aff-form-grid { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:1rem; align-items:end; margin-bottom:1.5rem; }
+  .aff-form-grid .field { min-width:0; margin-bottom:0; }
+  .aff-add-wrap .btn { width:100%; white-space:nowrap; }
+  .aff-subhead { font-size:1.05rem; margin:1.5rem 0 .8rem; }
+  .aff-table { min-width:900px; }
+  .aff-table th, .aff-table td { font-size:.88rem; padding:.75rem .65rem; }
+  .aff-table code { font-family:var(--mono); font-size:.82rem; word-break:break-all; }
+  .aff-message { min-height:1.4rem; margin:-.5rem 0 1rem; color:var(--muted); }
+  .aff-message.ok { color:var(--ok); }
+  .aff-message.err { color:var(--bad); }
+  .aff-actions { display:flex; gap:.35rem; flex-wrap:wrap; }
+  .aff-actions .btn-ghost { padding:.4rem .6rem; font-size:.82rem; white-space:nowrap; }
+  .aff-status-approved { color:var(--warn); }
+  .aff-status-paid { color:var(--ok); }
+  .aff-status-void { color:var(--muted); text-decoration:line-through; }
+  @media (max-width: 860px) { .aff-form-grid { grid-template-columns:1fr; } .aff-add-wrap .btn { width:auto; } }
+
   @media (max-width: 860px) {
     .stats { grid-template-columns: 1fr; }
     .upload-grid { grid-template-columns: 1fr; }
@@ -870,7 +891,10 @@ def admin_panel():
       <span class="brand-mark"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z"/></svg></span>
       <span class="brand-name">TAWA<span>Admin</span></span>
     </a>
-    <a class="site-link" href="/" target="_blank" rel="noopener">View Main Site →</a>
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:flex-end">
+      <a class="site-link" href="#affiliateManagement">Affiliate management ↓</a>
+      <a class="site-link" href="/" target="_blank" rel="noopener">View Main Site →</a>
+    </div>
   </div>
 </header>
 
@@ -879,6 +903,35 @@ def admin_panel():
     <h1>Your catalogue</h1>
     <p>Add new titles to the cloud and check that every one of them streams before your viewers find it.</p>
   </div>
+
+  <section class="card" aria-labelledby="affiliateTitle" id="affiliateManagement">
+    <h2 class="card-title" id="affiliateTitle">Affiliate management</h2>
+    <p class="card-sub" id="affRule">Each affiliate earns 30% of a customer's first verified subscription payment only. Renewals and free access earn no commission.</p>
+    <div id="affMsg" class="aff-message" role="status" aria-live="polite"></div>
+
+    <div class="aff-form-grid">
+      <div class="field"><label for="affName">Affiliate name</label><input class="input" id="affName" placeholder="e.g. John Banda" maxlength="60"></div>
+      <div class="field"><label for="affPhone">Phone for payouts</label><input class="input" id="affPhone" placeholder="097 123 4567"></div>
+      <div class="field"><label for="affCode">Referral code (optional)</label><input class="input" id="affCode" placeholder="Auto-generate"></div>
+      <div class="field aff-add-wrap"><label>&nbsp;</label><button class="btn" type="button" id="affAdd">Add affiliate</button></div>
+    </div>
+
+    <h3 class="aff-subhead">Affiliates and referrals</h3>
+    <div class="table-scroll"><table class="aff-table"><thead><tr><th>Name / phone</th><th>Referral link</th><th>Clicks</th><th>Sign-ups</th><th>Paying</th><th>Owed</th><th>Paid</th><th>Actions</th></tr></thead><tbody id="affRows"><tr><td colspan="8" class="muted-cell">Loading affiliates…</td></tr></tbody></table></div>
+
+    <h3 class="aff-subhead">Assign a customer manually</h3>
+    <p class="card-sub">Use this if a customer joined through an affiliate but the referral link was not saved. Assign before the customer pays.</p>
+    <div class="aff-form-grid aff-assign-grid">
+      <div class="field"><label for="affCustomerPhone">Customer phone</label><input class="input" id="affCustomerPhone" placeholder="097 123 4567"></div>
+      <div class="field"><label for="affAssignCode">Affiliate code</label><input class="input" id="affAssignCode" placeholder="JOHN42"></div>
+      <div class="field aff-add-wrap"><label>&nbsp;</label><button class="btn" type="button" id="affAssign">Assign referral</button></div>
+    </div>
+
+    <h3 class="aff-subhead">Recent commissions</h3>
+    <div class="table-scroll"><table class="aff-table"><thead><tr><th>Date</th><th>Code</th><th>Customer phone</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="affCommissionRows"><tr><td colspan="6" class="muted-cell">Loading commissions…</td></tr></tbody></table></div>
+    <p class="card-sub" style="margin-top:1rem;margin-bottom:0">Only verified payment callbacks create commissions. Giving someone free access with the admin tools does not earn a commission. Mark a payout as paid only after you have sent the money.</p>
+  </section>
+
 
   <section class="stats" aria-label="Platform stats">
     <div class="stat">
@@ -967,6 +1020,7 @@ def admin_panel():
       </div>
     </div>
   </section>
+
 
   <section class="card" aria-labelledby="libTitle">
     <div class="lib-head">
@@ -1264,6 +1318,77 @@ def admin_panel():
     try { await navigator.clipboard.writeText($('codeText').textContent); $('copyCode').textContent = 'Copied'; } catch (e) { $('copyCode').textContent = 'Select the text and copy it'; }
     setTimeout(() => { $('copyCode').textContent = 'Copy message'; }, 2000);
   });
+  /* ---------- Affiliate management ---------- */
+  const moneyK = (ngwee) => 'K' + (Number(ngwee || 0) / 100).toFixed(2);
+  function affMessage(message, kind) {
+    const el = $('affMsg'); el.textContent = message || ''; el.className = 'aff-message' + (kind ? ' ' + kind : '');
+  }
+  async function affPost(url, body) {
+    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Affiliate request failed.');
+    return data;
+  }
+  function affCell(row, value, className) {
+    const td = document.createElement('td'); if (className) td.className = className;
+    if (value instanceof Node) td.appendChild(value); else td.textContent = value == null ? '' : String(value);
+    row.appendChild(td); return td;
+  }
+  function affButton(label, handler, disabled) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-ghost'; b.textContent = label; b.disabled = !!disabled;
+    b.addEventListener('click', async () => { b.disabled = true; try { await handler(); } catch (e) { affMessage(e.message, 'err'); } finally { b.disabled = false; } });
+    return b;
+  }
+  async function loadAffiliates() {
+    try {
+      const response = await fetch('/admin/affiliates/data', {cache:'no-store'});
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load affiliates.');
+      $('affRule').textContent = 'Commission: ' + Math.round(data.rate * 100) + '% of the first verified subscription payment. At K' + data.price + ', that is ' + moneyK(Math.round(data.price * 100 * data.rate)) + ' per qualifying customer. One commission per customer; renewals and free access earn nothing.';
+      const rows = $('affRows'); rows.textContent = '';
+      if (!data.affiliates.length) { const tr = document.createElement('tr'); affCell(tr, 'No affiliates yet. Add the first one above.', 'muted-cell').colSpan = 8; rows.appendChild(tr); }
+      data.affiliates.forEach((a) => {
+        const tr = document.createElement('tr');
+        affCell(tr, a.name + ' · ' + a.phone);
+        const linkCell = document.createElement('td');
+        const code = document.createElement('code'); code.textContent = location.origin + '/r/' + a.code; linkCell.appendChild(code); linkCell.appendChild(document.createTextNode(' '));
+        linkCell.appendChild(affButton('Copy', async () => { const link = location.origin + '/r/' + a.code; try { await navigator.clipboard.writeText(link); affMessage('Referral link copied for ' + a.name + '.', 'ok'); } catch (_) { window.prompt('Copy this referral link', link); } })); tr.appendChild(linkCell);
+        [a.clicks, a.signups, a.customers].forEach(n => affCell(tr, n));
+        affCell(tr, moneyK(a.owed)); affCell(tr, moneyK(a.paid));
+        const actions = document.createElement('td'); const wrap = document.createElement('div'); wrap.className = 'aff-actions';
+        wrap.appendChild(affButton('Pay ' + moneyK(a.owed), async () => {
+          if (!a.owed) return;
+          if (!confirm('Have you already sent ' + moneyK(a.owed) + ' to ' + a.name + '? Only confirm after payment.')) return;
+          const result = await affPost('/admin/affiliates/payout', {code:a.code});
+          affMessage('Marked ' + moneyK(a.owed) + ' as paid (' + result.paid + ' commission(s)).', 'ok'); await loadAffiliates();
+        }, !a.owed));
+        wrap.appendChild(affButton(a.active ? 'Pause' : 'Resume', async () => { await affPost('/admin/affiliates/toggle', {code:a.code}); affMessage(a.active ? 'Affiliate paused.' : 'Affiliate resumed.', 'ok'); await loadAffiliates(); }));
+        actions.appendChild(wrap); tr.appendChild(actions); rows.appendChild(tr);
+      });
+      const commissions = $('affCommissionRows'); commissions.textContent = '';
+      if (!data.commissions.length) { const tr = document.createElement('tr'); affCell(tr, 'No commissions yet. They appear after a verified subscription payment.', 'muted-cell').colSpan = 6; commissions.appendChild(tr); }
+      data.commissions.forEach((c) => {
+        const tr = document.createElement('tr'); affCell(tr, (c.created_at || '').slice(0,10)); affCell(tr, c.code); affCell(tr, c.customer_phone); affCell(tr, moneyK(c.amount_ngwee));
+        const status = document.createElement('span'); status.textContent = c.status + (c.paid_at ? ' · ' + c.paid_at.slice(0,10) : ''); status.className = c.status === 'paid' ? 'aff-status-paid' : (c.status === 'void' ? 'aff-status-void' : 'aff-status-approved'); affCell(tr, status);
+        const actionCell = document.createElement('td');
+        if (c.status === 'approved') actionCell.appendChild(affButton('Void', async () => { if (!confirm('Void this commission? Use this only for an invalid commission.')) return; await affPost('/admin/affiliates/void', {id:c.id}); affMessage('Commission voided.', 'ok'); await loadAffiliates(); }));
+        tr.appendChild(actionCell); commissions.appendChild(tr);
+      });
+    } catch (e) { affMessage(e.message + ' Refresh the admin page after the affiliate backend is deployed.', 'err'); }
+  }
+  $('affAdd').addEventListener('click', async () => {
+    try { const result = await affPost('/admin/affiliates/add', {name:$('affName').value, phone:$('affPhone').value, code:$('affCode').value});
+      affMessage('Affiliate added. Referral link: ' + location.origin + '/r/' + result.code, 'ok');
+      $('affName').value = $('affPhone').value = $('affCode').value = ''; await loadAffiliates();
+    } catch (e) { affMessage(e.message, 'err'); }
+  });
+  $('affAssign').addEventListener('click', async () => {
+    try { await affPost('/admin/affiliates/assign', {phone:$('affCustomerPhone').value, code:$('affAssignCode').value});
+      affMessage('Customer referral assigned.', 'ok'); $('affCustomerPhone').value = $('affAssignCode').value = ''; await loadAffiliates();
+    } catch (e) { affMessage(e.message, 'err'); }
+  });
+  loadAffiliates();
+
   loadLive();
 
   $('search').addEventListener('input', renderLibrary);
@@ -1273,6 +1398,11 @@ def admin_panel():
 </body>
 </html>
 ''', total_videos=total_videos, total_categories=total_categories, subs=subs)
+
+# Affiliate system: referral links, admin dashboard, and payment-confirmed commissions.
+from affiliates import init_affiliates
+record_affiliate_payment = init_affiliates(app, db, requires_admin, normalize_phone, json_body, current_user)
+
 
 if __name__ == '__main__':
     init_db()
