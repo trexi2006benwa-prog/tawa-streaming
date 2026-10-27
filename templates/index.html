@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,12 +34,12 @@
   #q.on { width:190px; opacity:1; padding:0 1rem; }
   .cap { display:flex; align-items:center; gap:.5rem; padding:.2rem .9rem .2rem .2rem; border-radius:999px; background:rgba(255,255,255,.4); font-weight:500; font-size:.92rem; }
   .ava { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.85rem; color:#fff; background:linear-gradient(140deg,var(--deep),#3A9AD0); }
-  .btn { height:44px; padding:0 1.4rem; border:none; border-radius:12px; background:var(--ink); color:#E8F6FB; font-weight:700; font-size:.98rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; transition:.15s; }
+  .btn { min-height:44px; padding:0 1.4rem; border:none; border-radius:12px; background:var(--ink); color:#E8F6FB; font-weight:700; font-size:.98rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; transition:.15s; }
   .btn:hover { background:var(--deep); } .btn:disabled { opacity:.55; cursor:not-allowed; }
   .btn.lt { background:var(--base); color:var(--ink); } .btn.lt:hover { background:#D3ECF5; }
-  .ghost { height:44px; padding:0 1.2rem; border:1.5px solid currentColor; border-radius:12px; background:transparent; color:inherit; font-weight:700; font-size:.92rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; }
+  .ghost { min-height:44px; padding:0 1.2rem; border:1.5px solid currentColor; border-radius:12px; background:transparent; color:inherit; font-weight:700; font-size:.92rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; }
   .ghost:hover { background:rgba(255,255,255,.2); }
-  .ghost.sm { height:36px; padding:0 .9rem; font-size:.85rem; }
+  .ghost.sm { min-height:36px; padding:0 .9rem; font-size:.85rem; }
   .menu { position:absolute; top:calc(100% + 12px); right:0; width:230px; padding:.5rem; border-radius:18px; display:flex; flex-direction:column; transform-origin:top right; animation:pop .18s ease-out; }
   .menu button { background:none; border:none; text-align:left; padding:.7rem .9rem; border-radius:12px; font-size:.97rem; font-weight:500; color:var(--ink); cursor:pointer; }
   .menu button:hover { background:rgba(255,255,255,.55); }
@@ -61,8 +62,8 @@
   @keyframes blink { 50% { opacity:.3; } }
   .hero h1 { font-size:clamp(2.3rem,6vw,4.2rem); font-weight:800; line-height:1; letter-spacing:-.02em; margin:.9rem 0 .7rem; }
   .hero p { color:#D3E8F2; max-width:46ch; margin-bottom:1.5rem; line-height:1.5; }
-  .hero .btn { height:50px; padding:0 1.8rem; font-size:1.03rem; }
-  .hero .ghost { height:50px; color:#fff; }
+  .hero .btn { min-height:50px; padding:0 1.8rem; font-size:1.03rem; }
+  .hero .ghost { min-height:50px; color:#fff; }
   .row h2 { font-size:1.3rem; font-weight:800; margin-bottom:.8rem; display:flex; align-items:center; gap:.6rem; }
   .row h2 .dot { width:9px; height:9px; border-radius:50%; background:var(--live); box-shadow:0 0 0 4px rgba(229,72,77,.22); }
   .cards { display:flex; gap:1rem; overflow-x:auto; padding:.4rem .3rem 1rem; scroll-snap-type:x proximity; scrollbar-width:thin; scrollbar-color:rgba(11,37,64,.3) transparent; }
@@ -94,6 +95,9 @@
   .cc { height:48px; padding:0 .9rem; display:flex; align-items:center; border-radius:12px; background:rgba(255,255,255,.7); }
   .plan { margin:1rem 0; padding:1.1rem; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.8); }
   .plan strong { font-size:2rem; color:var(--deep); } .plan small { color:var(--mut); } .plan div { font-size:.92rem; margin-top:.2rem; }
+  .payment-box { margin:1rem 0; padding:1.1rem; border-radius:14px; background:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.8); }
+  .payment-number { display:block; font-size:1.6rem; font-weight:800; color:var(--deep); margin:.5rem 0; letter-spacing:.04em; }
+  .payment-note { font-size:.9rem; line-height:1.5; margin-bottom:.7rem; }
   .msg { min-height:1.4rem; margin-top:.8rem; font-size:.95rem; } .msg.err { color:#B42318; } .msg.ok { color:#067647; }
   .stack { display:flex; flex-direction:column; gap:.6rem; }
   .step { display:none; } .step.on { display:block; }
@@ -170,19 +174,30 @@
     <label for="code" style="font-weight:500">Code</label>
     <input class="inp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="margin:.4rem 0 .9rem;letter-spacing:.3em;font-size:1.2rem">
     <div class="stack"><button class="btn" id="verifyBtn" type="button">Sign in</button><button class="ghost" id="textBtn" type="button" hidden>Text me a code</button></div>
-    <p style="margin:.9rem 0 0;font-size:.9rem">No code yet? Pay K15 and message TAWA. We will send you one.</p>
+    <p style="margin:.9rem 0 0;font-size:.9rem">No code yet? Pay K17 and message TAWA on 0766270600. We will verify your payment and help you sign in.</p>
   </div>
+
   <div class="step" id="s3">
     <h2>Subscribe to watch</h2>
-    <p>One plan. Cancel by simply not renewing.</p>
-    <div class="plan"><strong>K15</strong> <small>/ month</small><div>All movies, shows and live events.</div></div>
-    <button class="btn" style="width:100%" id="payBtn" type="button">Pay K15 with mobile money</button>
-    <p style="margin:.8rem 0 0;font-size:.9rem">You get a prompt on your phone to approve the payment.</p>
+    <p>One plan. Pay manually each month to keep watching.</p>
+    <div class="plan"><strong>K17</strong> <small>/ month</small><div>All movies, shows and live events.</div></div>
+
+    <div class="payment-box">
+      <h3 style="margin-bottom:.5rem">Manual Mobile Money Payment</h3>
+      <p class="payment-note">Send your K17 subscription payment to this number using your mobile-money service:</p>
+      <span class="payment-number">0766270600</span>
+      <p class="payment-note">After paying, message TAWA on this number with your payment confirmation and the phone number you use on TAWA. Your subscription will be activated after your payment is checked.</p>
+      <button class="btn" style="width:100%" id="copyPayBtn" type="button">Copy payment number</button>
+    </div>
+
+    <button class="btn" style="width:100%;margin-top:.2rem" id="payBtn" type="button">I've sent my payment</button>
+    <p style="margin:.8rem 0 0;font-size:.9rem">This is a manual payment process. Your subscription is not activated automatically when you press the button.</p>
   </div>
+
   <div class="step" id="s4">
     <h2>My account</h2>
     <p id="acctText"></p>
-    <div class="stack"><button class="btn" id="acctSub" type="button">Subscribe K15</button></div>
+    <div class="stack"><button class="btn" id="acctSub" type="button">Subscribe K17</button></div>
   </div>
   <div class="msg" id="authMsg" role="status" aria-live="polite"></div>
 </dialog>
@@ -222,13 +237,12 @@
   const GAMECATS = ['Walkthroughs', 'Trending Games'];
   const LABEL = Object.assign({ movies: 'Movies', series: 'Series' }, GEN, GAME);
   const NAV = { all: 'Home', movies: 'Movies', series: 'Series', live: 'Live', list: 'My List' };
-  let me = { signed_in: false, subscribed: false, price: 15 };
+  let me = { signed_in: false, subscribed: false, price: 17 };
   let library = [], live = { is_live: false }, filter = 'all', q = '', current = null;
   let lastSave = 0, hls = null, retryTimer = null, watchingLive = false, idleTimer = null;
   const vid = $('player'), stage = $('stage');
 
-  /* ---------- helpers ---------- */
-  const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; } };
+  const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; };
   const post = async (url, body) => {
     try {
       const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
@@ -237,18 +251,17 @@
   };
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
   const store = (k) => { try { return JSON.parse(localStorage.getItem(k) || (k === 'tawa_list' ? '[]' : '{}')); } catch (e) { return k === 'tawa_list' ? [] : {}; } };
-  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* blocked */ } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const fmt = (s) => { if (!isFinite(s)) return '0:00'; s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? h + ':' + String(m).padStart(2, '0') + ':' + x : m + ':' + x; };
   const fmtDate = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
   const hue = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   function say(text, kind) { const m = $('authMsg'); m.textContent = text || ''; m.className = 'msg ' + (kind || ''); }
 
-  /* ---------- header, menu, filters ---------- */
   function renderBars() {
     const nav = $('nav');
     nav.textContent = '';
-    const fill = (box, label, map) => { box.textContent = ''; box.append(el('em', '', label)); Object.entries(map).forEach(([k, t]) => { const b = el('button', filter === k ? 'on' : '', t); b.type = 'button'; b.onclick = () => setFilter(k); box.append(b); }); };
-    fill(nav, '', NAV); nav.firstChild.remove();
+    const fill = (box, label, map) => { box.textContent = ''; if (label) box.append(el('em', '', label)); Object.entries(map).forEach(([k, t]) => { const b = el('button', filter === k ? 'on' : '', t); b.type = 'button'; b.onclick = () => setFilter(k); box.append(b); }); };
+    fill(nav, '', NAV);
     fill($('chipsG'), 'General', GEN);
     fill($('chipsX'), 'Gaming', GAME);
   }
@@ -258,10 +271,10 @@
     $('outBtn').hidden = !me.signed_in;
     if (me.signed_in) {
       const c = el('div', 'cap'); c.append(el('div', 'ava', (me.phone || '?').slice(-2)), el('b', '', me.phone)); top.append(c);
-      if (!me.subscribed) { const s = el('button', 'btn', 'Subscribe K' + me.price); s.onclick = () => openAuth(3); top.append(s); }
+      if (!me.subscribed) { const s = el('button', 'btn', 'Subscribe K17'); s.onclick = () => openAuth(3); top.append(s); }
     } else {
       const g = el('button', 'ghost', 'Sign in'); g.onclick = () => openAuth(1);
-      const s = el('button', 'btn', 'Subscribe K' + me.price); s.onclick = () => openAuth(1);
+      const s = el('button', 'btn', 'Subscribe K17'); s.onclick = () => openAuth(1);
       top.append(g, s);
     }
   }
@@ -277,7 +290,6 @@
     if (m === 'out') { await post('/auth/logout'); location.reload(); }
   };
 
-  /* ---------- rows ---------- */
   function card(title, sub, opts, onClick) {
     const b = el('button', 'card'); b.type = 'button'; b.onclick = onClick;
     const p = el('div', 'poster'), h = hue(title);
@@ -306,7 +318,7 @@
       addRow(root, 'Continue Watching', 'continue', src.filter((v) => prog[v.id] && prog[v.id].t > 5 && prog[v.id].t < prog[v.id].d * 0.95)
         .map((v) => card(v.title, 'Pick up where you left off', { pct: Math.round(prog[v.id].t / prog[v.id].d * 100) }, () => play(v))));
       const cats = [...new Set(src.map((v) => v.category))];
-      ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n))).forEach((n) => addRow(root, n === 'Trending Now' ? 'Trending Now' : n, null, vcards(src.filter((v) => v.category === n))));
+      ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n))).forEach((n) => addRow(root, n, null, vcards(src.filter((v) => v.category === n))));
     } else if (filter === 'new') addRow(root, 'New Releases', null, vcards(src.slice(0, 12)), { grid: true });
     else if (filter === 'list') { const ids = store('tawa_list'); addRow(root, 'My List', null, vcards(src.filter((v) => ids.includes(v.id))), { grid: true }); }
     else if (filter === 'live') { if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Streaming now', { live: true }, playLive)], { live: true, grid: true }); }
@@ -335,14 +347,13 @@
   }
   function toggleList(id) { const l = store('tawa_list'), i = l.indexOf(id); if (i < 0) l.push(id); else l.splice(i, 1); save('tawa_list', l); }
 
-  /* ---------- sign in, subscribe, account ---------- */
   function openAuth(step) {
     if (step === 3 && !me.signed_in) step = 1;
     if (me.signed_in && step === 1) step = me.subscribed ? 4 : 3;
     ['s1', 's3', 's4'].forEach((s) => $(s).classList.toggle('on', s === 's' + step));
     if (step === 4) {
       $('acctText').textContent = me.phone + (me.subscribed ? ' · Plan active until ' + fmtDate(me.paid_until) + '.' : ' · No active plan.');
-      $('acctSub').textContent = me.subscribed ? 'Add 30 more days (K' + me.price + ')' : 'Subscribe K' + me.price;
+      $('acctSub').textContent = me.subscribed ? 'Renew manually (K17)' : 'Subscribe K17';
       $('acctSub').onclick = () => openAuth(3);
     }
     say('');
@@ -350,6 +361,7 @@
     if (step === 1) $('phone').focus();
   }
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).close()));
+
   $('textBtn').onclick = async () => {
     $('textBtn').disabled = true; say('Sending your code…');
     const { r, d } = await post('/auth/send-code', { phone: $('phone').value });
@@ -357,6 +369,7 @@
     if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
     say('We texted a 6-digit code to ' + d.phone + '.', 'ok'); $('code').focus();
   };
+
   $('verifyBtn').onclick = async () => {
     $('verifyBtn').disabled = true;
     const { r, d } = await post('/auth/verify', { phone: $('phone').value, code: $('code').value });
@@ -365,20 +378,21 @@
     me = d; renderAuth(); await refreshLive();
     if (me.subscribed) $('authDlg').close(); else openAuth(3);
   };
-  $('payBtn').onclick = async () => {
-    $('payBtn').disabled = true; say('Starting your payment…');
-    const { r, d } = await post('/pay/start');
-    if (!r.ok) { $('payBtn').disabled = false; return say(d.error || 'The payment could not start.', 'err'); }
-    say('Check your phone and approve the K' + me.price + ' payment.', 'ok');
-    for (let i = 0; i < 45; i++) {
-      await new Promise((res) => setTimeout(res, 4000));
-      const m = (await get('/me')).d;
-      if (m.subscribed) { me = m; renderAuth(); await refreshLive(); $('authDlg').close(); $('payBtn').disabled = false; return; }
+
+  $('copyPayBtn').onclick = async () => {
+    const number = '0766270600';
+    try {
+      await navigator.clipboard.writeText(number);
+      say('Payment number copied: ' + number, 'ok');
+    } catch (e) {
+      say('Send your K17 payment to 0766270600.', 'ok');
     }
-    $('payBtn').disabled = false; say('We have not received your payment yet. If you paid, wait a minute and refresh.', 'err');
   };
 
-  /* ---------- player controls ---------- */
+  $('payBtn').onclick = () => {
+    say('If you have sent K17, message TAWA on 0766270600 with your payment confirmation and your TAWA phone number. We will check it and activate your subscription manually.', 'ok');
+  };
+
   const PLAY = 'M5 3l15 9-15 9z', PAUSE = 'M6 4h4v16H6zM14 4h4v16h-4z';
   function overlay(text, spin) { $('overlay').hidden = !text; $('ovText').textContent = text || ''; $('spin').hidden = spin === false; }
   function wake() { stage.classList.remove('idle'); clearTimeout(idleTimer); if (!vid.paused) idleTimer = setTimeout(() => stage.classList.add('idle'), 2800); }
@@ -485,11 +499,10 @@
     $('playTitle').textContent = live.title || 'TAWA Live';
     $('liveTag').hidden = false;
     $('playDlg').showModal(); overlay('Connecting to the live…');
-    try { await loadHls(); } catch (e) { /* native playback fallback */ }
+    try { await loadHls(); } catch (e) {}
     attachLive(live.hls_url);
   }
 
-  /* ---------- boot ---------- */
   async function refreshLive() {
     const d = (await get('/api/live')).d;
     live = d && typeof d.is_live !== 'undefined' ? d : { is_live: false };
@@ -498,7 +511,11 @@
   }
   (async () => {
     renderBars();
-    me = (await get('/me')).d; renderAuth(); $('textBtn').hidden = !me.sms;
+    const response = await get('/me');
+    me = response.d || { signed_in: false, subscribed: false, price: 17 };
+    me.price = 17;
+    renderAuth();
+    $('textBtn').hidden = !me.sms;
     library = (await get('/api/library')).d || [];
     await refreshLive();
     setInterval(refreshLive, 30000);
