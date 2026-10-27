@@ -242,7 +242,7 @@
   let lastSave = 0, hls = null, retryTimer = null, watchingLive = false, idleTimer = null;
   const vid = $('player'), stage = $('stage');
 
-  const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; };
+  const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; } };
   const post = async (url, body) => {
     try {
       const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
