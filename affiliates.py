@@ -42,8 +42,6 @@ def init_affiliates(app, db, requires_admin, normalize_phone, json_body, current
             customer_phone TEXT NOT NULL, price_ngwee INTEGER NOT NULL,
             amount_ngwee INTEGER NOT NULL, status TEXT DEFAULT 'approved',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP, paid_at TEXT);
-        CREATE UNIQUE INDEX IF NOT EXISTS one_commission_per_customer
-            ON commissions (customer_phone) WHERE status <> 'void';
         CREATE UNIQUE INDEX IF NOT EXISTS one_commission_per_customer_all
             ON commissions (customer_phone)
     ''')
