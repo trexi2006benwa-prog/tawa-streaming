@@ -126,7 +126,38 @@
   .cr select option { color:#0B2540; }
   .cr #volr { width:80px; } .cr span { font-size:.85rem; font-variant-numeric:tabular-nums; } .sp { flex:1; }
   .stage.islive .vod, .stage:not(.islive) .lv { display:none; }
-  @media (max-width:760px) { header { gap:.4rem; padding:.5rem .6rem .5rem 1rem; } nav { order:3; width:100%; justify-content:center; } .brand { font-size:1.35rem; } .card { width:200px; } .cap b { display:none; } #q.on { width:130px; } }
+  @media (max-width:760px) {
+    header { gap:.4rem; padding:.5rem .6rem .5rem 1rem; }
+    nav { order:3; width:100%; justify-content:flex-start; overflow-x:auto; }
+    nav button { flex:none; padding:.5rem .75rem; font-size:.9rem; }
+    .brand { font-size:1.35rem; }
+    .card { width: min(68vw, 200px); }
+    .cap b { display:none; }
+    #q.on { width:130px; }
+    main { padding: .8rem .65rem 3rem; gap:1.25rem; }
+    .hero { min-height:300px; border-radius:20px; }
+    .hb { padding:1.25rem; }
+    dialog.wide { position:fixed; inset:0; margin:0; width:100vw; max-width:none; height:100dvh; max-height:none; border-radius:0; border:0; padding: max(.35rem, env(safe-area-inset-top)) .45rem max(.5rem, env(safe-area-inset-bottom)); overflow-y:auto; }
+    dialog.wide .x { position:sticky; top:0; z-index:5; float:right; width:42px; height:42px; margin-bottom:-42px; background:rgba(8,22,40,.75); border-radius:50%; }
+    .ptitle { padding:.4rem 3rem .65rem .25rem; gap:.4rem; font-size:.95rem; }
+    .ptitle .ghost { margin-left:0; margin-right:0; }
+    .stage { width:100%; border-radius:10px; }
+    video { width:100%; height:auto; max-height: min(56vh, 420px); aspect-ratio:16/9; object-fit:contain; }
+    .ctrl { left:5px; right:5px; bottom:5px; padding:.35rem .45rem; border-radius:10px; }
+    .cr { gap:.12rem; margin-top:.15rem; }
+    .cr button, .cr select { min-width:32px; height:34px; padding:0 .28rem; font-size:.78rem; }
+    .cr #volr { width:54px; }
+    .cr span { font-size:.72rem; }
+    .tip { bottom:20px; }
+  }
+  @media (max-width:420px) {
+    .ptitle { font-size:.88rem; }
+    .cr { justify-content:space-between; }
+    .cr #volr { display:none; }
+    .cr button, .cr select { min-width:29px; padding:0 .2rem; font-size:.72rem; }
+    .cr span { font-size:.68rem; }
+    .overlay { gap:.5rem; font-size:.9rem; }
+  }
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
