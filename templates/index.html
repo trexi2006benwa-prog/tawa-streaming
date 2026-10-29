@@ -70,7 +70,10 @@
   .cards.grid { flex-wrap:wrap; overflow:visible; }
   .card { flex:none; width:236px; background:none; border:none; color:inherit; text-align:left; cursor:pointer; scroll-snap-align:start; }
   .poster { position:relative; aspect-ratio:16/10; border-radius:18px; overflow:hidden; border:1px solid rgba(255,255,255,.7); display:flex; align-items:flex-end; justify-content:flex-end; padding:.5rem .9rem; box-shadow:0 6px 18px rgba(11,37,64,.18); transition:transform .18s,box-shadow .18s; }
-  .poster b { font-size:5rem; font-weight:800; line-height:.8; color:rgba(255,255,255,.2); }
+  .poster b { font-size:5rem; font-weight:800; line-height:.8; color:rgba(255,255,255,.2); position:relative; z-index:1; }
+  .poster img.poster-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .poster.has-thumb b { display:none; }
+  .poster .chip, .poster .go, .poster .bar { z-index:2; }
   .chip { position:absolute; left:10px; top:10px; padding:.2rem .65rem; border-radius:999px; font-size:.76rem; font-weight:700; color:var(--ink); background:rgba(255,255,255,.7); backdrop-filter:blur(6px); }
   .chip.live { background:var(--live); color:#fff; }
   .go { position:absolute; left:10px; bottom:10px; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.85); color:var(--ink); display:grid; place-items:center; opacity:0; transform:scale(.8); transition:.18s; }
@@ -148,7 +151,6 @@
 <main>
   <div style="display:flex;flex-direction:column;gap:.6rem">
     <div class="chips glass" id="chipsG" role="group" aria-label="General filters"></div>
-    <div class="chips glass" id="chipsX" role="group" aria-label="Gaming filters"></div>
   </div>
   <section class="hero" id="hero" hidden>
     <div class="hb">
@@ -230,13 +232,12 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows'];
-  const CAT = { trending: 'Trending Now', movies: 'Popular Movies', series: 'TV Shows', walk: 'Walkthroughs', games: 'Trending Games' };
+  const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows', 'Podcasts'];
+  const CAT = { trending: 'Trending Now', movies: 'Popular Movies', series: 'TV Shows', podcasts: 'Podcasts', gaming: 'Gaming' };
   const GEN = { all: 'All Videos', trending: 'Trending', new: 'New Releases' };
-  const GAME = { gaming: 'All Gaming', walk: 'Walkthroughs', games: 'Trending Games' };
-  const GAMECATS = ['Walkthroughs', 'Trending Games'];
-  const LABEL = Object.assign({ movies: 'Movies', series: 'Series' }, GEN, GAME);
-  const NAV = { all: 'Home', movies: 'Movies', series: 'Series', live: 'Live', list: 'My List' };
+  const GAMECATS = ['Walkthroughs', 'Trending Games', 'Gaming', 'Gameplay', 'Esports'];
+  const LABEL = Object.assign({ movies: 'Movies', series: 'Series', podcasts: 'Podcasts', gaming: 'Gaming' }, GEN);
+  const NAV = { all: 'Home', movies: 'Movies', series: 'Series', gaming: 'Gaming', podcasts: 'Podcasts', live: 'Live', list: 'My List' };
   let me = { signed_in: false, subscribed: false, price: 17 };
   let library = [], live = { is_live: false }, filter = 'all', q = '', current = null;
   let lastSave = 0, hls = null, retryTimer = null, watchingLive = false, idleTimer = null;
@@ -262,8 +263,7 @@
     nav.textContent = '';
     const fill = (box, label, map) => { box.textContent = ''; if (label) box.append(el('em', '', label)); Object.entries(map).forEach(([k, t]) => { const b = el('button', filter === k ? 'on' : '', t); b.type = 'button'; b.onclick = () => setFilter(k); box.append(b); }); };
     fill(nav, '', NAV);
-    fill($('chipsG'), 'General', GEN);
-    fill($('chipsX'), 'Gaming', GAME);
+    fill($('chipsG'), 'Browse', GEN);
   }
   function setFilter(k) { filter = k; renderBars(); renderRows(); }
   function renderAuth() {
@@ -295,6 +295,11 @@
     const p = el('div', 'poster'), h = hue(title);
     p.style.background = 'linear-gradient(145deg,hsl(' + h + ',60%,38%),hsl(' + ((h + 45) % 360) + ',55%,20%))';
     p.append(el('b', '', (title || '?').trim().charAt(0).toUpperCase()));
+    if (opts.thumb) {
+      const img = el('img', 'poster-img'); img.alt = title + ' thumbnail'; img.loading = 'lazy'; img.src = opts.thumb;
+      img.onerror = () => { img.remove(); p.classList.remove('has-thumb'); };
+      p.classList.add('has-thumb'); p.prepend(img);
+    }
     if (opts.live) p.append(el('span', 'chip live', 'Live')); else if (opts.chip) p.append(el('span', 'chip', opts.chip));
     const go = el('span', 'go'); go.innerHTML = '<svg class="i f" viewBox="0 0 24 24"><path d="M5 3l15 9-15 9z"/></svg>'; p.append(go);
     if (opts.pct) { const bar = el('div', 'bar'), f = el('u'); f.style.width = opts.pct + '%'; bar.append(f); p.append(bar); }
@@ -308,7 +313,9 @@
     const w = el('div', 'cards' + (o && o.grid ? ' grid' : '')); cards.forEach((c) => w.appendChild(c));
     s.append(h, w); root.appendChild(s);
   }
-  const vcards = (list) => list.map((v) => card(v.title, v.category, { chip: v.category === 'Trending Now' ? 'Trending' : '' }, () => play(v)));
+  const vcards = (list) => list.map((v) => card(v.title, v.category, { thumb: v.thumb || ('/thumb/' + v.id), chip: v.category === 'Trending Now' ? 'Trending' : '' }, () => play(v)));
+  const isGaming = (v) => GAMECATS.includes((v.category || '').trim());
+  const homeCategory = (v) => isGaming(v) ? 'TV Shows' : (v.category || 'General');
   function renderRows() {
     const root = $('rows'); root.textContent = '';
     const src = library.filter((v) => !q || v.title.toLowerCase().includes(q));
@@ -317,12 +324,12 @@
       const prog = store('tawa_progress');
       addRow(root, 'Continue Watching', 'continue', src.filter((v) => prog[v.id] && prog[v.id].t > 5 && prog[v.id].t < prog[v.id].d * 0.95)
         .map((v) => card(v.title, 'Pick up where you left off', { pct: Math.round(prog[v.id].t / prog[v.id].d * 100) }, () => play(v))));
-      const cats = [...new Set(src.map((v) => v.category))];
-      ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n))).forEach((n) => addRow(root, n, null, vcards(src.filter((v) => v.category === n))));
+      const cats = [...new Set(src.map(homeCategory))];
+      ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n))).forEach((n) => addRow(root, n, null, vcards(src.filter((v) => homeCategory(v) === n))));
     } else if (filter === 'new') addRow(root, 'New Releases', null, vcards(src.slice(0, 12)), { grid: true });
     else if (filter === 'list') { const ids = store('tawa_list'); addRow(root, 'My List', null, vcards(src.filter((v) => ids.includes(v.id))), { grid: true }); }
     else if (filter === 'live') { if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Streaming now', { live: true }, playLive)], { live: true, grid: true }); }
-    else if (filter === 'gaming') addRow(root, 'All Gaming', null, vcards(src.filter((v) => GAMECATS.includes(v.category))), { grid: true });
+    else if (filter === 'gaming') addRow(root, 'Gaming', null, vcards(src.filter(isGaming)), { grid: true });
     else addRow(root, LABEL[filter], null, vcards(src.filter((v) => v.category === CAT[filter])), { grid: true });
     if (!root.children.length) root.append(el('p', 'empty', filter === 'list' ? 'Your list is empty. Tap + My List on a title to save it.' : filter === 'live' ? 'No live event right now. Check back soon.' : q ? 'No titles match your search.' : 'New titles are on the way. Check back soon.'));
     renderHero();
@@ -339,7 +346,7 @@
       const v = library[0]; hero.hidden = false; hero.className = 'hero';
       $('heroTag').className = 'badge'; $('heroTag').textContent = 'New on TAWA';
       $('heroTitle').textContent = v.title;
-      $('heroText').textContent = 'Zambian movies, shows and live events, all in one place.';
+      $('heroText').textContent = 'Zambian movies, series, podcasts and live events, all in one place.';
       $('heroBtn').textContent = 'Watch now'; $('heroPlay').onclick = () => play(v);
       $('heroList').hidden = false; $('heroList').textContent = store('tawa_list').includes(v.id) ? '\u2713 In My List' : '+ My List';
       $('heroList').onclick = () => { toggleList(v.id); renderHero(); };
