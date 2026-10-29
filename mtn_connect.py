@@ -3,7 +3,7 @@ import json
 import uuid
 
 # Your brand-new active Collections primary key
-PRIMARY_KEY = "6f1febfcbb6543a88fba810d1fd1ddeb"
+PRIMARY_KEY = "6f1febfcbb654d3a88fba810d1fd1deb"
 
 def run_connection():
     try:
