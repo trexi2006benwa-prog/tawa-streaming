@@ -18,17 +18,24 @@ from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
-# AWS S3 Configuration
+# S3-compatible object storage (Backblaze B2).
+# Set these in Render > Environment. Keep the existing AWS_* key names if
+# those are the names already used by your deployment.
 AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME', 'tawa-streaming')
-AWS_REGION = 'eu-north-1'  # Stockholm region
+AWS_REGION = os.environ.get('AWS_REGION', 'eu-central-003')
+S3_ENDPOINT_URL = (
+    os.environ.get('B2_ENDPOINT_URL')
+    or os.environ.get('AWS_ENDPOINT_URL')
+    or 'https://s3.eu-central-003.backblazeb2.com'
+).rstrip('/')
 
-
-# Initialize S3 client
+# Boto3 must be pointed at the Backblaze endpoint; otherwise it calls AWS S3.
 s3_client = boto3.client(
     's3',
+    endpoint_url=S3_ENDPOINT_URL,
     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-    region_name=AWS_REGION
+    region_name=AWS_REGION,
 )
 
 # ---------------------------------------------------------------------------
@@ -107,6 +114,8 @@ def init_db():
         c.execute("ALTER TABLE videos ADD COLUMN category TEXT DEFAULT 'General'")
     if 'thumb_key' not in columns:
         c.execute("ALTER TABLE videos ADD COLUMN thumb_key TEXT")
+    if 'views' not in columns:
+        c.execute("ALTER TABLE videos ADD COLUMN views INTEGER NOT NULL DEFAULT 0")
         
     conn.commit()
     conn.close()
@@ -118,11 +127,12 @@ init_db()
 PRICE_KWACHA = 15
 SUBSCRIPTION_DAYS = 30
 
+# Set SECRET_KEY to a long random value in Render so sessions survive restarts.
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=not os.environ.get('DEV_MODE'),
+    SESSION_COOKIE_SECURE=os.environ.get('DEV_MODE') != '1',
     PERMANENT_SESSION_LIFETIME=datetime.timedelta(days=90),
 )
 
@@ -367,9 +377,19 @@ def api_library():
     conn = db()
     rows = conn.execute("SELECT id, title, category, upload_date, thumb_key FROM videos WHERE s3_key IS NOT NULL ORDER BY upload_date DESC").fetchall()
     conn.close()
-    return jsonify([{'id': r['id'], 'title': r['title'], 'category': r['category'] or 'General',
-                     'upload_date': r['upload_date'],
-                     'thumb': f"/thumb/{r['id']}" if r['thumb_key'] else None} for r in rows])
+    output = []
+    for r in rows:
+        category = (r['category'] or 'General').strip()
+        # Gaming is content, not a separate top-level section. Keep legacy gaming
+        # uploads inside the regular Series catalogue.
+        if category.casefold() in {'gaming', 'gameplay', 'esports'}:
+            category = 'TV Shows'
+        output.append({'id': r['id'], 'title': r['title'], 'category': category,
+                       'upload_date': r['upload_date'],
+                       # Always return the thumbnail route; it can show a safe fallback
+                       # when a title has no custom image yet.
+                       'thumb': f"/thumb/{r['id']}"})
+    return jsonify(output)
 
 
 def presigned(s3_key, seconds=3 * 3600):
@@ -386,9 +406,13 @@ def watch(video_id):
         return jsonify({'error': 'subscribe'}), 402
     conn = db()
     row = conn.execute('SELECT title, s3_key FROM videos WHERE id = ?', (video_id,)).fetchone()
-    conn.close()
     if not row or not row['s3_key']:
+        conn.close()
         return jsonify({'error': 'Video not found'}), 404
+    # Count a view only after an authenticated subscriber requests playback.
+    conn.execute('UPDATE videos SET views = COALESCE(views, 0) + 1 WHERE id = ?', (video_id,))
+    conn.commit()
+    conn.close()
     return jsonify({'title': row['title'], 'url': presigned(row['s3_key'])})
 
 
@@ -527,8 +551,11 @@ def thumb(video_id):
     conn = db()
     row = conn.execute('SELECT thumb_key FROM videos WHERE id = ?', (video_id,)).fetchone()
     conn.close()
-    if not row or not row['thumb_key']:
+    if not row:
         return '', 404
+    if not row['thumb_key']:
+        fallback = '''<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#164e63"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="160" r="44" fill="#38bdf8" fill-opacity=".18" stroke="#7dd3fc" stroke-width="2"/><path d="M306 136 L344 160 L306 184 Z" fill="#e0f2fe"/><text x="320" y="255" fill="#e0f2fe" font-family="Arial,sans-serif" font-size="24" text-anchor="middle" font-weight="700">TAWA</text></svg>'''
+        return Response(fallback, mimetype='image/svg+xml', headers={'Cache-Control': 'public, max-age=300'})
     resp = redirect(presigned(row['thumb_key'], 86400))
     resp.headers['Cache-Control'] = 'public, max-age=3600'
     return resp
@@ -553,7 +580,8 @@ def upload_video():
     try:
         print("=== UPLOAD DEBUG START ===")
         print("AWS_BUCKET_NAME:", AWS_BUCKET_NAME)
-        print("AWS_REGION:", AWS_REGION)
+        print("S3 endpoint:", S3_ENDPOINT_URL)
+        print("S3 region:", AWS_REGION)
         
         if 'video' not in request.files:
             print("❌ No video file in request")
@@ -612,7 +640,7 @@ def upload_video():
             conn.close()
             
             # Generate the S3 URL for the response
-            s3_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
+            s3_url = presigned(s3_key, 900)
             print("🎉 Upload completed successfully!")
             
             return jsonify({
@@ -637,14 +665,14 @@ def get_videos():
     try:
         conn = sqlite3.connect('tawa.db')
         c = conn.cursor()
-        c.execute("SELECT id, title, filename, s3_key, upload_date, category, thumb_key FROM videos ORDER BY upload_date DESC")
+        c.execute("SELECT id, title, filename, s3_key, upload_date, category, thumb_key, COALESCE(views, 0) FROM videos ORDER BY upload_date DESC")
         videos = c.fetchall()
         conn.close()
         
         video_list = []
         for video in videos:
             # Generate S3 URL for each video (older rows may have no s3_key)
-            s3_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{video[3]}" if video[3] else None
+            s3_url = bool(video[3])  # Used by the admin UI only to decide whether to show Test Stream
             
             video_list.append({
                 'id': video[0],        # id
@@ -653,7 +681,8 @@ def get_videos():
                 's3_url': s3_url,      # generated URL
                 'upload_date': video[4], # upload_date at index 4
                 'category': video[5] or 'General',  # category at index 5
-                'thumb': f"/thumb/{video[0]}" if video[6] else None
+                'thumb': f"/thumb/{video[0]}",
+                'views': video[7]
             })
         
         return jsonify(video_list)
@@ -689,12 +718,13 @@ Sitemap: https://tawa-streaming.onrender.com/sitemap.xml'''
 def admin_panel():
     total_videos = 0
     total_categories = 0
+    total_views = 0
     subs = 0
     try:
         conn = sqlite3.connect('tawa.db')
         c = conn.cursor()
-        c.execute("SELECT COUNT(*), COUNT(DISTINCT category) FROM videos")
-        total_videos, total_categories = c.fetchone()
+        c.execute("SELECT COUNT(*), COUNT(DISTINCT category), COALESCE(SUM(views), 0) FROM videos")
+        total_videos, total_categories, total_views = c.fetchone()
         c.execute("SELECT COUNT(*) FROM users WHERE paid_until > ?", (utcnow().isoformat(),))
         subs = c.fetchone()[0]
         conn.close()
@@ -777,7 +807,7 @@ def admin_panel():
   .page-head p { color: var(--muted); margin-top: 0.4rem; max-width: 56ch; }
 
   /* ---------- Stats ---------- */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
   .stat {
     background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
     padding: 1.2rem 1.3rem;
@@ -883,7 +913,7 @@ def admin_panel():
   }
   .btn-ghost:hover { border-color: var(--sky); }
   .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
-  table { width: 100%; border-collapse: collapse; min-width: 720px; }
+  table { width: 100%; border-collapse: collapse; min-width: 820px; }
   th { text-align: left; font-weight: 500; font-size: 0.88rem; color: var(--muted); padding: 0.85rem 1.1rem; background: var(--panel-2); border-bottom: 1px solid var(--line); }
   td { padding: 0.95rem 1.1rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
@@ -941,7 +971,7 @@ def admin_panel():
   @media (max-width: 860px) { .aff-form-grid { grid-template-columns:1fr; } .aff-add-wrap .btn { width:auto; } }
 
   @media (max-width: 860px) {
-    .stats { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .upload-grid { grid-template-columns: 1fr; }
     .lib-tools { width: 100%; }
     .lib-tools .input { flex: 1; width: auto; }
@@ -1015,7 +1045,11 @@ def admin_panel():
       <div class="stat-value">{{ subs }}</div>
     </div>
     <div class="stat">
-      <div class="stat-label">S3 Storage Status</div>
+      <div class="stat-label">Total Views</div>
+      <div class="stat-value" id="statViews">{{ total_views }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Cloud Storage Status</div>
       <div class="pill"><i></i>Connected</div>
     </div>
   </section>
@@ -1044,8 +1078,9 @@ def admin_panel():
             <select class="select" id="videoCategory" required>
               <option value="">Choose a row</option>
               <option value="Trending Now">Trending Now</option>
-              <option value="Popular Movies">Popular Movies</option>
-              <option value="TV Shows">TV Shows</option>
+              <option value="Popular Movies">Movies</option>
+              <option value="TV Shows">Series / Shows (including gaming)</option>
+              <option value="Podcasts">Podcasts</option>
               
             </select>
           </div>
@@ -1120,6 +1155,7 @@ def admin_panel():
             <th>Title</th>
             <th>Category</th>
             <th>System Filename</th>
+            <th>Views</th>
             <th class="right">Actions</th>
           </tr>
         </thead>
@@ -1132,7 +1168,7 @@ def admin_panel():
 <script>
   const $ = (id) => document.getElementById(id);
   const ALLOWED = ['mp4', 'avi', 'mov', 'mkv', 'webm'];
-  const TINTS = { 'Trending Now': 'trending', 'Popular Movies': 'movies', 'TV Shows': 'shows', 'Continue Watching': 'continue' };
+  const TINTS = { 'Trending Now': 'trending', 'Popular Movies': 'movies', 'TV Shows': 'shows', 'Podcasts': 'podcasts', 'Continue Watching': 'continue' };
   let library = [];
   let chosenFile = null;
 
@@ -1286,7 +1322,7 @@ def admin_panel():
   function showSkeleton() {
     const rows = [];
     for (let i = 0; i < 4; i++) {
-      rows.push('<tr class="skeleton"><td><div style="width:70%"></div></td><td><div style="width:60%"></div></td><td><div style="width:80%"></div></td><td><div style="width:50%;margin-left:auto"></div></td></tr>');
+      rows.push('<tr class="skeleton"><td><div style="width:70%"></div></td><td><div style="width:60%"></div></td><td><div style="width:80%"></div></td><td><div style="width:35%"></div></td><td><div style="width:50%;margin-left:auto"></div></td></tr>');
     }
     $('libBody').innerHTML = rows.join('');
   }
@@ -1307,7 +1343,7 @@ def admin_panel():
     if (!list.length) {
       const tr = document.createElement('tr');
       const td = document.createElement('td');
-      td.colSpan = 4;
+      td.colSpan = 5;
       td.className = 'empty';
       const strong = document.createElement('strong');
       strong.textContent = library.length ? 'No titles match your search' : 'Your library is empty';
@@ -1356,6 +1392,11 @@ def admin_panel():
       file.textContent = v.filename;
       tr.appendChild(cell(file));
 
+      // Recorded playback requests
+      const views = document.createElement('strong');
+      views.textContent = Number(v.views || 0).toLocaleString();
+      tr.appendChild(cell(views));
+
       // Actions
       const acts = document.createElement('div');
       acts.style.cssText = 'display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap';
@@ -1401,7 +1442,7 @@ def admin_panel():
       $('libCount').textContent = 'Could not load the library.';
       const tr = document.createElement('tr');
       const td = document.createElement('td');
-      td.colSpan = 4;
+      td.colSpan = 5;
       td.className = 'empty';
       const strong = document.createElement('strong');
       strong.textContent = 'Library unavailable';
@@ -1530,7 +1571,7 @@ def admin_panel():
 </script>
 </body>
 </html>
-''', total_videos=total_videos, total_categories=total_categories, subs=subs)
+''', total_videos=total_videos, total_categories=total_categories, total_views=total_views, subs=subs)
 
 # Affiliate system: referral links, admin dashboard, and payment-confirmed commissions.
 from affiliates import init_affiliates
