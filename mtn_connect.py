@@ -18,21 +18,16 @@ def run_connection():
         
         print(f"📋 Step 1 Status: {register_res.status_code}")
 
-        print("🔄 Step 2: Requesting API Key via explicit Collection route...")
-        # Adjusted URL to map cleanly to collection routing architectures
-        key_url = f"https://mtn.com{USER_ID}/apikey"
+        print("🔄 Step 2: Requesting API Key...")
+        # Fixed URL: Clean, absolute path to the sandbox gateway
+        key_url = f"https://mtn.com/{USER_ID}/apikey"
         key_headers = {
             "Ocp-Apim-Subscription-Key": PRIMARY_KEY,
+            "Content-Type": "application/json",
             "Cache-Control": "no-cache"
         }
         
-        key_res = requests.post(key_url, headers=key_headers)
-        
-        # Fallback if collection prefix is too deep
-        if key_res.status_code == 404:
-            print("🔄 Attempting alternative portal route...")
-            key_url = f"https://mtn.com/{USER_ID}/apikey"
-            key_res = requests.post(key_url, headers=key_headers)
+        key_res = requests.post(key_url, headers=key_headers, data="{}")
         
         try:
             key_data = key_res.json()
@@ -49,7 +44,7 @@ def run_connection():
             print("=========================================")
         else:
             print(f"❌ Key extraction failed. Server Response Code: {key_res.status_code}")
-            print(f"Raw body chunk: {key_res.text[:150]}")
+            print(f"Raw body chunk: {key_res.text[:200]}")
 
     except Exception as e:
         print(f"❌ Failed: {str(e)}")
