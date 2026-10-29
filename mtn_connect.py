@@ -1,7 +1,6 @@
 import requests
 import json
 
-# Your verified primary key
 PRIMARY_KEY = "6e2387d598d04d25b0ec25a6c4983ae4"
 USER_ID = "3c2a1e4b-5d6f-47a8-b9c0-e1f2a3b4c5d6"
 
@@ -23,8 +22,7 @@ def run_connection():
         
         register_res = requests.post(register_url, data=register_body, headers=register_headers)
         
-        # FIXED: Corrected the syntax here to handle both 200 and 201 statuses safely
-        if register_res.status_code in:
+        if register_res.status_code == 201 or register_res.status_code == 200:
             print("✅ Step 1 complete! User registered profile.")
         else:
             print(f"⚠️ Step 1 notification (Status {register_res.status_code})")
