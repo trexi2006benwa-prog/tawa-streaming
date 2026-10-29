@@ -70,6 +70,10 @@ def fix_database():
         if 'category' not in columns:
             c.execute("ALTER TABLE videos ADD COLUMN category TEXT DEFAULT 'General'")
             print("✅ Added category column to existing database")
+
+        if 'thumb_key' not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN thumb_key TEXT")
+            print("✅ Added thumb_key column to existing database")
         else:
             print("✅ All columns already exist")
             
@@ -101,6 +105,8 @@ def init_db():
         c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
     if 'category' not in columns:
         c.execute("ALTER TABLE videos ADD COLUMN category TEXT DEFAULT 'General'")
+    if 'thumb_key' not in columns:
+        c.execute("ALTER TABLE videos ADD COLUMN thumb_key TEXT")
         
     conn.commit()
     conn.close()
@@ -359,10 +365,11 @@ def pay_webhook():
 def api_library():
     """Public catalogue: titles and rows only. No video links."""
     conn = db()
-    rows = conn.execute("SELECT id, title, category, upload_date FROM videos WHERE s3_key IS NOT NULL ORDER BY upload_date DESC").fetchall()
+    rows = conn.execute("SELECT id, title, category, upload_date, thumb_key FROM videos WHERE s3_key IS NOT NULL ORDER BY upload_date DESC").fetchall()
     conn.close()
     return jsonify([{'id': r['id'], 'title': r['title'], 'category': r['category'] or 'General',
-                     'upload_date': r['upload_date']} for r in rows])
+                     'upload_date': r['upload_date'],
+                     'thumb': f"/thumb/{r['id']}" if r['thumb_key'] else None} for r in rows])
 
 
 def presigned(s3_key, seconds=3 * 3600):
@@ -490,6 +497,56 @@ init_db()
 def home():
     return render_template('index.html')
 
+
+# ---------------------------------------------------------------------------
+# Thumbnails (the picture shown on each video card)
+# ---------------------------------------------------------------------------
+THUMB_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
+
+def save_thumbnail(file):
+    """Upload an image to S3 and return its key (or None if it isn't a valid image)."""
+    if not file or not file.filename:
+        return None
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in THUMB_EXTS:
+        return None
+    file.seek(0, os.SEEK_END)
+    if file.tell() > 5 * 1024 * 1024:   # 5 MB max
+        return None
+    file.seek(0)
+    key = f"thumbs/{uuid.uuid4().hex[:8]}.{ext}"
+    s3_client.upload_fileobj(
+        file, AWS_BUCKET_NAME, key,
+        ExtraArgs={'ContentType': mimetypes.guess_type(file.filename)[0] or 'image/jpeg'})
+    return key
+
+
+@app.route('/thumb/<int:video_id>')
+def thumb(video_id):
+    """Public thumbnail. Redirects to a signed S3 link, cached by the browser."""
+    conn = db()
+    row = conn.execute('SELECT thumb_key FROM videos WHERE id = ?', (video_id,)).fetchone()
+    conn.close()
+    if not row or not row['thumb_key']:
+        return '', 404
+    resp = redirect(presigned(row['thumb_key'], 86400))
+    resp.headers['Cache-Control'] = 'public, max-age=3600'
+    return resp
+
+
+@app.route('/admin/thumbnail/<int:video_id>', methods=['POST'])
+@requires_admin
+def admin_thumbnail(video_id):
+    key = save_thumbnail(request.files.get('thumbnail'))
+    if not key:
+        return jsonify({'error': 'Use a JPG, PNG or WEBP image under 5 MB.'}), 400
+    conn = db()
+    conn.execute('UPDATE videos SET thumb_key = ? WHERE id = ?', (key, video_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
 @app.route('/upload', methods=['POST'])
 @requires_admin
 def upload_video():
@@ -539,11 +596,18 @@ def upload_video():
                 print("❌ S3 upload failed:", str(e))
                 return jsonify({'error': f'S3 upload failed: {str(e)}'}), 500
             
+            # Thumbnail (optional): a failed thumbnail must never fail the video upload
+            try:
+                thumb_key = save_thumbnail(request.files.get('thumbnail'))
+            except Exception as e:
+                print("⚠️ Thumbnail upload failed:", str(e))
+                thumb_key = None
+
             # Save to database
             conn = sqlite3.connect('tawa.db')
             c = conn.cursor()
-            c.execute("INSERT INTO videos (title, filename, s3_key, category) VALUES (?, ?, ?, ?)", 
-                     (title, filename, s3_key, category))
+            c.execute("INSERT INTO videos (title, filename, s3_key, category, thumb_key) VALUES (?, ?, ?, ?, ?)",
+                     (title, filename, s3_key, category, thumb_key))
             conn.commit()
             conn.close()
             
@@ -573,7 +637,7 @@ def get_videos():
     try:
         conn = sqlite3.connect('tawa.db')
         c = conn.cursor()
-        c.execute("SELECT id, title, filename, s3_key, upload_date, category FROM videos ORDER BY upload_date DESC")
+        c.execute("SELECT id, title, filename, s3_key, upload_date, category, thumb_key FROM videos ORDER BY upload_date DESC")
         videos = c.fetchall()
         conn.close()
         
@@ -588,7 +652,8 @@ def get_videos():
                 'filename': video[2],  # filename
                 's3_url': s3_url,      # generated URL
                 'upload_date': video[4], # upload_date at index 4
-                'category': video[5] or 'General'  # category at index 5
+                'category': video[5] or 'General',  # category at index 5
+                'thumb': f"/thumb/{video[0]}" if video[6] else None
             })
         
         return jsonify(video_list)
@@ -830,6 +895,9 @@ def admin_panel():
     display: grid; place-items: center; font-weight: 800; font-size: 0.95rem; color: var(--sky);
     background: linear-gradient(140deg, #243247, #172033); border: 1px solid var(--line);
   }
+  .thumb { overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb-prev { width: 180px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); }
   .title-text { font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
   .title-date { color: var(--muted); font-size: 0.82rem; font-weight: 400; display: block; }
   .badge {
@@ -992,6 +1060,18 @@ def admin_panel():
             <div class="drop-file" id="dropFile"></div>
           </div>
           <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+
+          <div class="field" style="margin-top:1.2rem">
+            <label>Thumbnail (the picture people see)</label>
+            <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+              <img class="thumb-prev" id="thumbPrev" alt="Thumbnail preview">
+              <div style="display:flex;flex-direction:column;gap:.5rem;align-items:flex-start">
+                <button type="button" class="btn-ghost" id="thumbNewFrame">Pick another frame</button>
+                <button type="button" class="btn-ghost" id="thumbOwn">Upload my own image</button>
+                <input type="file" id="thumbFile" accept="image/jpeg,image/png,image/webp" hidden>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="form-actions">
@@ -1078,6 +1158,7 @@ def admin_panel():
       return;
     }
     chosenFile = file;
+    startThumb(file);
     clearStatus();
     $('drop').classList.add('has-file');
     $('dropTitle').textContent = 'Ready to upload';
@@ -1092,10 +1173,51 @@ def admin_panel():
   ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
   drop.addEventListener('drop', (e) => pickFile(e.dataTransfer.files[0]));
 
+  /* ---------- Thumbnails ---------- */
+  let thumbBlob = null, thumbVid = null, prevUrl = null;
+  function clearThumb() {
+    thumbBlob = null;
+    if (thumbVid) { URL.revokeObjectURL(thumbVid.src); thumbVid = null; }
+    if (prevUrl) { URL.revokeObjectURL(prevUrl); prevUrl = null; }
+    $('thumbPrev').removeAttribute('src');
+  }
+  function showThumb(blob) {
+    thumbBlob = blob;
+    if (prevUrl) URL.revokeObjectURL(prevUrl);
+    prevUrl = URL.createObjectURL(blob);
+    $('thumbPrev').src = prevUrl;
+  }
+  function captureFrame(fraction) {
+    const v = thumbVid; if (!v) return;
+    v.onseeked = () => {
+      v.onseeked = null;
+      const c = document.createElement('canvas'); c.width = 640; c.height = 360;
+      const vr = v.videoWidth / v.videoHeight, cr = 16 / 9;
+      let sw = v.videoWidth, sh = v.videoHeight, sx = 0, sy = 0;
+      if (vr > cr) { sw = sh * cr; sx = (v.videoWidth - sw) / 2; } else { sh = sw / cr; sy = (v.videoHeight - sh) / 2; }
+      c.getContext('2d').drawImage(v, sx, sy, sw, sh, 0, 0, 640, 360);
+      c.toBlob((b) => { if (b) showThumb(b); }, 'image/jpeg', 0.85);
+    };
+    v.currentTime = Math.max(0.5, (v.duration || 2) * fraction);
+  }
+  function startThumb(file) {
+    clearThumb();
+    const v = document.createElement('video');
+    v.muted = true; v.preload = 'auto'; v.playsInline = true;
+    v.src = URL.createObjectURL(file);
+    v.onloadedmetadata = () => captureFrame(0.1);
+    v.onerror = () => setStatus('error', 'Cannot preview this format', 'Press "Upload my own image" to add a thumbnail.');
+    thumbVid = v;
+  }
+  $('thumbNewFrame').addEventListener('click', () => captureFrame(0.1 + Math.random() * 0.7));
+  $('thumbOwn').addEventListener('click', () => $('thumbFile').click());
+  $('thumbFile').addEventListener('change', (e) => { if (e.target.files[0]) showThumb(e.target.files[0]); });
+
   /* ---------- Upload (XHR so a big video shows real progress) ---------- */
   function resetForm() {
     $('uploadForm').reset();
     chosenFile = null;
+    clearThumb();
     drop.classList.remove('has-file');
     $('dropTitle').textContent = 'Drop your video here';
     $('dropHint').textContent = 'or click to browse. MP4, MOV, MKV, AVI or WEBM.';
@@ -1120,6 +1242,7 @@ def admin_panel():
     data.append('title', title);
     data.append('category', category);
     data.append('video', chosenFile);
+    if (thumbBlob) data.append('thumbnail', thumbBlob, thumbBlob.name || 'thumb.jpg');
 
     $('uploadBtn').disabled = true;
     $('uploadBtn').textContent = 'Uploading…';
@@ -1204,6 +1327,7 @@ def admin_panel():
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
       thumb.textContent = (v.title || '?').trim().charAt(0).toUpperCase();
+      if (v.thumb) { thumb.textContent = ''; const im = document.createElement('img'); im.src = v.thumb; im.alt = ''; thumb.appendChild(im); }
       const info = document.createElement('div');
       info.style.minWidth = '0';
       const name = document.createElement('span');
@@ -1233,20 +1357,29 @@ def admin_panel():
       tr.appendChild(cell(file));
 
       // Actions
-      let action;
+      const acts = document.createElement('div');
+      acts.style.cssText = 'display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap';
       if (v.s3_url) {
-        action = document.createElement('a');
-        action.className = 'test-link';
-        action.href = '/admin/stream/' + v.id;
-        action.target = '_blank';
-        action.rel = 'noopener';
-        action.textContent = 'Test Stream ↗';
+        const a = document.createElement('a');
+        a.className = 'test-link'; a.href = '/admin/stream/' + v.id; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'Test Stream ↗'; acts.appendChild(a);
       } else {
-        action = document.createElement('span');
-        action.className = 'muted-cell';
-        action.textContent = 'No cloud file';
+        const s = document.createElement('span'); s.className = 'muted-cell'; s.textContent = 'No cloud file'; acts.appendChild(s);
       }
-      tr.appendChild(cell(action, 'right'));
+      const tb = document.createElement('button');
+      tb.type = 'button'; tb.className = 'btn-ghost'; tb.textContent = v.thumb ? 'Change thumbnail' : 'Add thumbnail';
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/jpeg,image/png,image/webp'; inp.hidden = true;
+      tb.onclick = () => inp.click();
+      inp.onchange = async () => {
+        if (!inp.files[0]) return;
+        const fd = new FormData(); fd.append('thumbnail', inp.files[0]);
+        tb.disabled = true; tb.textContent = 'Saving…';
+        const r = await fetch('/admin/thumbnail/' + v.id, { method: 'POST', body: fd });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); notify('error', 'Thumbnail failed', d.error || 'Try again.'); }
+        loadLibrary();
+      };
+      acts.append(tb, inp);
+      tr.appendChild(cell(acts, 'right'));
 
       body.appendChild(tr);
     });
