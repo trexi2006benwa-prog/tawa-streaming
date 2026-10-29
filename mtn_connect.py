@@ -2,7 +2,7 @@ import requests
 import json
 import uuid
 
-# Your verified sandbox profile subscription key
+# Your verified primary key
 PRIMARY_KEY = "6e2387d598d04d25b0ec25a6c4983ae4"
 
 def run_connection():
@@ -12,8 +12,7 @@ def run_connection():
         print(f"🆔 Generated Fresh App User ID: {USER_ID}")
         
         print("🔄 Step 1: Registering new user profile on MTN Sandbox...")
-        # UPDATED: Pointing to the partner subscription gateway to avoid consumer web domain redirects
-        register_url = "https://mtn.com"
+        register_url = "https://sandbox.momodeveloper.mtn.com/v1_0/apiuser"
         
         register_headers = {
             "X-Reference-Id": USER_ID,
@@ -21,7 +20,8 @@ def run_connection():
             "Content-Type": "application/json"
         }
         
-        register_body = json.dumps({"providerCallbackHost": "webhook.site"})
+        # FIXED: Using a pure standard IP host string to prevent payload syntax validation failures
+        register_body = json.dumps({"providerCallbackHost": "127.0.0.1"})
         
         register_res = requests.post(register_url, data=register_body, headers=register_headers)
         print(f"📋 Step 1 Status: {register_res.status_code}")
@@ -30,8 +30,7 @@ def run_connection():
             print(f"⚠️ Step 1 did not return a 201 Created status. Response text snippet: {register_res.text[:200]}")
 
         print("🔄 Step 2: Requesting your secret API Key...")
-        # UPDATED: Aligning Step 2 route to partner context
-        key_url = f"https://mtn.com/{USER_ID}/apikey"
+        key_url = f"https://mtn.com{USER_ID}/apikey"
         key_headers = {
             "Ocp-Apim-Subscription-Key": PRIMARY_KEY,
             "Content-Type": "application/json"
