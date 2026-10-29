@@ -1,6 +1,6 @@
 import requests
 import json
-import uuid  # This automatically makes a perfect, fresh ID every time
+import uuid
 
 # Your verified primary key
 PRIMARY_KEY = "6e2387d598d04d25b0ec25a6c4983ae4"
@@ -12,22 +12,30 @@ def run_connection():
         print(f"🆔 Generated Fresh App User ID: {USER_ID}")
         
         print("🔄 Step 1: Registering new user profile on MTN Sandbox...")
-        register_url = "https://sandbox.momodeveloper.mtn.com/v1_0/apiuser"
+        register_url = "https://mtn.com"
+        
+        # Using normalized lowercase headers to guarantee gateway compatibility
         register_headers = {
-            "X-Reference-Id": USER_ID,
-            "Ocp-Apim-Subscription-Key": PRIMARY_KEY,
-            "Content-Type": "application/json"
+            "x-reference-id": USER_ID,
+            "ocp-apim-subscription-key": PRIMARY_KEY,
+            "content-type": "application/json"
         }
-        register_body = json.dumps({"providerCallbackHost": "https://webhook.site"})
+        
+        # Stripped "https://" protocol as required by MTN gateway validation specifications
+        register_body = json.dumps({"providerCallbackHost": "webhook.site"})
         
         register_res = requests.post(register_url, data=register_body, headers=register_headers)
         print(f"📋 Step 1 Status: {register_res.status_code}")
+        
+        # If step 1 fails, we want to know exactly what the gateway complained about
+        if register_res.status_code != 201:
+            print(f"⚠️ Step 1 did not return a 201 Created status. Response text: {register_res.text}")
 
         print("🔄 Step 2: Requesting your secret API Key...")
-        key_url = f"https://sandbox.momodeveloper.mtn.com/v1_0/apiuser/{USER_ID}/apikey"
+        key_url = f"https://mtn.com/{USER_ID}/apikey"
         key_headers = {
-            "Ocp-Apim-Subscription-Key": PRIMARY_KEY,
-            "Content-Type": "application/json"
+            "ocp-apim-subscription-key": PRIMARY_KEY,
+            "content-type": "application/json"
         }
         
         key_res = requests.post(key_url, headers=key_headers, data="{}")
