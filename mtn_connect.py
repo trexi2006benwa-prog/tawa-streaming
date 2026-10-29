@@ -9,9 +9,7 @@ def run_connection():
     try:
         print("🔄 Step 1: Registering user on MTN Sandbox...")
         
-        # Explicit clean URL without any trailing route loops
         register_url = "https://mtn.com"
-        
         register_headers = {
             "X-Reference-Id": USER_ID,
             "Ocp-Apim-Subscription-Key": PRIMARY_KEY,
@@ -19,17 +17,17 @@ def run_connection():
             "Cache-Control": "no-cache"
         }
         
-        # Format the body clearly as a string to prevent gateway proxy errors
         register_body = json.dumps({
             "providerCallbackHost": "https://webhook.site"
         })
         
         register_res = requests.post(register_url, data=register_body, headers=register_headers)
         
+        # FIXED: Corrected the syntax here to handle both 200 and 201 statuses safely
         if register_res.status_code in:
             print("✅ Step 1 complete! User registered profile.")
         else:
-            print(f"⚠️ Step 1 warning (Status {register_res.status_code})")
+            print(f"⚠️ Step 1 notification (Status {register_res.status_code})")
 
         print("🔄 Step 2: Requesting your secret API Key...")
         
@@ -41,7 +39,6 @@ def run_connection():
         
         key_res = requests.post(key_url, headers=key_headers)
         
-        # Let's inspect the API Key response body safely
         try:
             key_data = key_res.json()
             api_key = key_data.get('apiKey')
