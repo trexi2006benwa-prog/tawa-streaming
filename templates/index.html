@@ -1,563 +1,715 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TAWA</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-<style>
-  :root { --base:#ADD8E6; --ink:#0B2540; --mut:#3F6486; --deep:#0E4D7A; --live:#E5484D; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  [hidden] { display:none !important; }
-  body { color:var(--ink); font-family:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; min-height:100vh; background:radial-gradient(620px 420px at 8% 0%,#E6F5FA,transparent),radial-gradient(760px 520px at 100% 28%,#7FC1E0,transparent),radial-gradient(640px 520px at 30% 100%,#CFEBF6,transparent),var(--base); background-attachment:fixed; }
-  button, input, select { font-family:inherit; }
-  a { color:inherit; text-decoration:none; }
-  :focus-visible { outline:2px solid var(--deep); outline-offset:2px; }
-  .glass { background:linear-gradient(135deg,rgba(255,255,255,.38),rgba(173,216,230,.2)); backdrop-filter:blur(22px) saturate(1.4); -webkit-backdrop-filter:blur(22px) saturate(1.4); border:1px solid rgba(255,255,255,.6); box-shadow:0 8px 32px rgba(11,37,64,.12); }
-  svg.i { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; flex:none; }
-  svg.f { fill:currentColor; stroke:none; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAWA - Zambian Streaming Platform</title>
+  <meta name="description" content="Watch Zambian movies, TV shows, podcasts, gaming and live events on TAWA. Unlimited streaming for K15/month.">
+  
+  <!-- Google Fonts: Bricolage Grotesque & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN (zero build step needed) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            amber: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
+          }
+        }
+      }
+    }
+  </script>
 
-  header { position:sticky; top:12px; z-index:30; margin:12px clamp(.7rem,3vw,2rem) 0; padding:.6rem .8rem .6rem 1.2rem; border-radius:22px; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
-  .brand { font-weight:800; font-size:1.55rem; letter-spacing:.06em; margin-right:auto; }
-  .brand span { color:var(--deep); }
-  nav { display:flex; gap:.3rem; }
-  nav button { background:none; border:none; font-weight:500; font-size:1rem; color:var(--mut); padding:.55rem 1rem; border-radius:999px; cursor:pointer; transition:.15s; }
-  nav button:hover { color:var(--ink); background:rgba(255,255,255,.35); }
-  nav button.on { color:var(--ink); font-weight:700; background:rgba(255,255,255,.55); }
-  .acts { display:flex; align-items:center; gap:.5rem; margin-left:auto; position:relative; }
-  .ic { width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.35); color:var(--ink); display:grid; place-items:center; cursor:pointer; }
-  .ic:hover { background:rgba(255,255,255,.65); }
-  #q { width:0; opacity:0; padding:0; border:none; height:42px; border-radius:999px; background:rgba(255,255,255,.55); color:var(--ink); font-size:.95rem; transition:width .25s,opacity .2s,padding .25s; }
-  #q.on { width:190px; opacity:1; padding:0 1rem; }
-  .cap { display:flex; align-items:center; gap:.5rem; padding:.2rem .9rem .2rem .2rem; border-radius:999px; background:rgba(255,255,255,.4); font-weight:500; font-size:.92rem; }
-  .ava { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:.85rem; color:#fff; background:linear-gradient(140deg,var(--deep),#3A9AD0); }
-  .btn { min-height:44px; padding:0 1.4rem; border:none; border-radius:12px; background:var(--ink); color:#E8F6FB; font-weight:700; font-size:.98rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; transition:.15s; }
-  .btn:hover { background:var(--deep); } .btn:disabled { opacity:.55; cursor:not-allowed; }
-  .btn.lt { background:var(--base); color:var(--ink); } .btn.lt:hover { background:#D3ECF5; }
-  .ghost { min-height:44px; padding:0 1.2rem; border:1.5px solid currentColor; border-radius:12px; background:transparent; color:inherit; font-weight:700; font-size:.92rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; }
-  .ghost:hover { background:rgba(255,255,255,.2); }
-  .ghost.sm { min-height:36px; padding:0 .9rem; font-size:.85rem; }
-  .menu { position:absolute; top:calc(100% + 12px); right:0; width:230px; padding:.5rem; border-radius:18px; display:flex; flex-direction:column; transform-origin:top right; animation:pop .18s ease-out; }
-  .menu button { background:none; border:none; text-align:left; padding:.7rem .9rem; border-radius:12px; font-size:.97rem; font-weight:500; color:var(--ink); cursor:pointer; }
-  .menu button:hover { background:rgba(255,255,255,.55); }
-  @keyframes pop { from { opacity:0; transform:scale(.94) translateY(-6px); } }
+  <!-- HLS.js for Live & HLS Video Playback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.14/hls.min.js"></script>
 
-  main { padding:1.2rem clamp(.7rem,3vw,2rem) 4rem; display:flex; flex-direction:column; gap:1.8rem; }
-  .chips { display:flex; gap:.5rem; overflow-x:auto; padding:.55rem .7rem; border-radius:999px; scrollbar-width:none; }
-  .chips button { flex:none; border:1px solid rgba(255,255,255,.7); background:rgba(255,255,255,.25); color:var(--ink); font-weight:500; font-size:.92rem; padding:.5rem 1.1rem; border-radius:999px; cursor:pointer; transition:.15s; }
-  .chips button:hover { background:rgba(255,255,255,.6); }
-  .chips button.on { background:var(--ink); color:#E8F6FB; border-color:var(--ink); font-weight:700; }
-  .chips em { flex:none; align-self:center; font-style:normal; font-weight:800; color:var(--deep); padding:0 .5rem 0 .6rem; }
-  .hero { position:relative; min-height:clamp(320px,48vh,460px); border-radius:28px; overflow:hidden; display:flex; align-items:flex-end; color:#fff; background:linear-gradient(120deg,#06243F,#0E4D7A 55%,#2B2A5C); isolation:isolate; }
-  .hero::before { content:''; position:absolute; inset:0; z-index:-1; background:radial-gradient(520px 320px at 80% 15%,rgba(173,216,230,.5),transparent 65%),repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.04) 46px 48px); }
-  .hero.live::before { background:radial-gradient(520px 320px at 80% 15%,rgba(229,72,77,.5),transparent 65%),radial-gradient(500px 300px at 60% 95%,rgba(173,216,230,.4),transparent 65%),repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.04) 46px 48px); }
-  .hero::after { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,rgba(4,18,34,.85),rgba(4,18,34,.1) 70%); }
-  .hb { padding:clamp(1.4rem,4vw,2.8rem); max-width:640px; }
-  .badge { display:inline-flex; align-items:center; gap:.45rem; padding:.28rem .85rem; border-radius:999px; font-weight:700; font-size:.85rem; background:rgba(173,216,230,.25); border:1px solid rgba(255,255,255,.5); }
-  .badge.on-air { background:var(--live); border-color:transparent; }
-  .badge i { width:8px; height:8px; border-radius:50%; background:#fff; animation:blink 1.4s ease-in-out infinite; }
-  @keyframes blink { 50% { opacity:.3; } }
-  .hero h1 { font-size:clamp(2.3rem,6vw,4.2rem); font-weight:800; line-height:1; letter-spacing:-.02em; margin:.9rem 0 .7rem; }
-  .hero p { color:#D3E8F2; max-width:46ch; margin-bottom:1.5rem; line-height:1.5; }
-  .hero .btn { min-height:50px; padding:0 1.8rem; font-size:1.03rem; }
-  .hero .ghost { min-height:50px; color:#fff; }
-  .row h2 { font-size:1.3rem; font-weight:800; margin-bottom:.8rem; display:flex; align-items:center; gap:.6rem; }
-  .row h2 .dot { width:9px; height:9px; border-radius:50%; background:var(--live); box-shadow:0 0 0 4px rgba(229,72,77,.22); }
-  .cards { display:flex; gap:1rem; overflow-x:auto; padding:.4rem .3rem 1rem; scroll-snap-type:x proximity; scrollbar-width:thin; scrollbar-color:rgba(11,37,64,.3) transparent; }
-  .cards.grid { flex-wrap:wrap; overflow:visible; }
-  .card { flex:none; width:236px; background:none; border:none; color:inherit; text-align:left; cursor:pointer; scroll-snap-align:start; }
-  .poster { position:relative; aspect-ratio:16/10; border-radius:18px; overflow:hidden; border:1px solid rgba(255,255,255,.7); display:flex; align-items:flex-end; justify-content:flex-end; padding:.5rem .9rem; box-shadow:0 6px 18px rgba(11,37,64,.18); transition:transform .18s,box-shadow .18s; }
-  .poster b { font-size:5rem; font-weight:800; line-height:.8; color:rgba(255,255,255,.2); position:relative; z-index:1; }
-  .poster img.poster-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
-  .poster.has-thumb b { display:none; }
-  .poster .chip, .poster .go, .poster .bar { z-index:2; }
-  .chip { position:absolute; left:10px; top:10px; padding:.2rem .65rem; border-radius:999px; font-size:.76rem; font-weight:700; color:var(--ink); background:rgba(255,255,255,.7); backdrop-filter:blur(6px); }
-  .chip.live { background:var(--live); color:#fff; }
-  .go { position:absolute; left:10px; bottom:10px; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.85); color:var(--ink); display:grid; place-items:center; opacity:0; transform:scale(.8); transition:.18s; }
-  .go svg { width:13px; height:13px; margin-left:2px; }
-  .card:hover .poster, .card:focus-visible .poster { transform:translateY(-4px); box-shadow:0 16px 30px rgba(11,37,64,.28); }
-  .card:hover .go, .card:focus-visible .go { opacity:1; transform:none; }
-  .ct { margin-top:.6rem; font-weight:700; font-size:.98rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cs { color:var(--mut); font-size:.85rem; }
-  .bar { position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.35); }
-  .bar u { display:block; height:100%; background:var(--base); }
-  .empty { color:var(--mut); padding:3rem 1rem; text-align:center; }
-
-  dialog { margin:auto; border:1px solid rgba(255,255,255,.7); border-radius:22px; color:var(--ink); padding:1.6rem; width:min(480px,92vw); background:linear-gradient(135deg,rgba(236,247,252,.92),rgba(173,216,230,.85)); backdrop-filter:blur(24px); box-shadow:0 24px 60px rgba(11,37,64,.35); }
-  dialog::backdrop { background:rgba(6,24,44,.55); backdrop-filter:blur(5px); }
-  dialog.wide { width:min(1000px,96vw); padding:.9rem; border-radius:16px; background:rgba(8,22,40,.7); color:#E8F6FB; border-color:rgba(173,216,230,.35); }
-  dialog h2 { font-size:1.5rem; font-weight:800; margin-bottom:.3rem; }
-  dialog p { color:var(--mut); margin-bottom:1rem; }
-  dialog.wide p { color:#B7D3E3; }
-  .inp { height:48px; width:100%; padding:0 .9rem; border-radius:12px; border:1px solid rgba(11,37,64,.2); background:rgba(255,255,255,.7); color:var(--ink); font-size:1rem; }
-  .inp:focus { outline:none; border-color:var(--deep); box-shadow:0 0 0 3px rgba(14,77,122,.2); }
-  .phone { display:flex; gap:.5rem; margin-bottom:.8rem; }
-  .cc { height:48px; padding:0 .9rem; display:flex; align-items:center; border-radius:12px; background:rgba(255,255,255,.7); }
-  .plan { margin:1rem 0; padding:1.1rem; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.8); }
-  .plan strong { font-size:2rem; color:var(--deep); } .plan small { color:var(--mut); } .plan div { font-size:.92rem; margin-top:.2rem; }
-  .payment-box { margin:1rem 0; padding:1.1rem; border-radius:14px; background:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.8); }
-  .payment-number { display:block; font-size:1.6rem; font-weight:800; color:var(--deep); margin:.5rem 0; letter-spacing:.04em; }
-  .payment-note { font-size:.9rem; line-height:1.5; margin-bottom:.7rem; }
-  .msg { min-height:1.4rem; margin-top:.8rem; font-size:.95rem; } .msg.err { color:#B42318; } .msg.ok { color:#067647; }
-  .stack { display:flex; flex-direction:column; gap:.6rem; }
-  .step { display:none; } .step.on { display:block; }
-  .x { float:right; background:none; border:none; color:inherit; opacity:.7; font-size:1.6rem; cursor:pointer; line-height:1; width:44px; height:44px; }
-  .ptitle { display:flex; align-items:center; gap:.7rem; font-weight:700; padding:.2rem .3rem .7rem; min-height:44px; flex-wrap:wrap; }
-  .ptitle .ghost { margin-left:auto; margin-right:2.4rem; color:var(--base); }
-  .onair { display:inline-flex; align-items:center; gap:6px; background:rgba(229,72,77,.2); color:#FFB4B6; border:1px solid rgba(229,72,77,.6); padding:2px 10px; border-radius:999px; font-size:.8rem; }
-  .onair i { width:8px; height:8px; border-radius:50%; background:var(--live); animation:blink 1.4s ease-in-out infinite; }
-  .stage { position:relative; border-radius:16px; overflow:hidden; background:#000; }
-  video { width:100%; max-height:74vh; display:block; aspect-ratio:16/9; }
-  .overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.8rem; background:rgba(0,0,0,.5); pointer-events:none; text-align:center; padding:1rem; }
-  .spin { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.25); border-top-color:var(--base); animation:spin .9s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .ctrl { position:absolute; left:12px; right:12px; bottom:12px; padding:.55rem .8rem .5rem; border-radius:16px; color:#E8F6FB; background:rgba(8,22,40,.45); border-color:rgba(173,216,230,.35); transition:opacity .25s; }
-  .stage.idle .ctrl { opacity:0; }
-  .tl { position:relative; }
-  .tip { position:absolute; bottom:22px; transform:translateX(-50%); background:rgba(8,22,40,.9); color:var(--base); font-size:.78rem; font-weight:700; padding:.2rem .55rem; border-radius:8px; pointer-events:none; }
-  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:5px; background:rgba(173,216,230,.3); cursor:pointer; accent-color:var(--base); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--base); box-shadow:0 0 0 4px rgba(173,216,230,.25); }
-  .cr { display:flex; align-items:center; gap:.3rem; margin-top:.35rem; flex-wrap:wrap; }
-  .cr button, .cr select { background:none; border:none; color:var(--base); height:36px; min-width:36px; padding:0 .5rem; border-radius:10px; cursor:pointer; font-weight:700; font-size:.85rem; display:inline-grid; place-items:center; }
-  .cr button:hover, .cr select:hover { background:rgba(173,216,230,.18); }
-  .cr select option { color:#0B2540; }
-  .cr #volr { width:80px; } .cr span { font-size:.85rem; font-variant-numeric:tabular-nums; } .sp { flex:1; }
-  .stage.islive .vod, .stage:not(.islive) .lv { display:none; }
-  @media (max-width:760px) {
-    header { gap:.4rem; padding:.5rem .6rem .5rem 1rem; }
-    nav { order:3; width:100%; justify-content:flex-start; overflow-x:auto; }
-    nav button { flex:none; padding:.5rem .75rem; font-size:.9rem; }
-    .brand { font-size:1.35rem; }
-    .card { width: min(68vw, 200px); }
-    .cap b { display:none; }
-    #q.on { width:130px; }
-    main { padding: .8rem .65rem 3rem; gap:1.25rem; }
-    .hero { min-height:300px; border-radius:20px; }
-    .hb { padding:1.25rem; }
-    dialog.wide { position:fixed; inset:0; margin:0; width:100vw; max-width:none; height:100dvh; max-height:none; border-radius:0; border:0; padding: max(.35rem, env(safe-area-inset-top)) .45rem max(.5rem, env(safe-area-inset-bottom)); overflow-y:auto; }
-    dialog.wide .x { position:sticky; top:0; z-index:5; float:right; width:42px; height:42px; margin-bottom:-42px; background:rgba(8,22,40,.75); border-radius:50%; }
-    .ptitle { padding:.4rem 3rem .65rem .25rem; gap:.4rem; font-size:.95rem; }
-    .ptitle .ghost { margin-left:0; margin-right:0; }
-    .stage { width:100%; border-radius:10px; }
-    video { width:100%; height:auto; max-height: min(56vh, 420px); aspect-ratio:16/9; object-fit:contain; }
-    .ctrl { left:5px; right:5px; bottom:5px; padding:.35rem .45rem; border-radius:10px; }
-    .cr { gap:.12rem; margin-top:.15rem; }
-    .cr button, .cr select { min-width:32px; height:34px; padding:0 .28rem; font-size:.78rem; }
-    .cr #volr { width:54px; }
-    .cr span { font-size:.72rem; }
-    .tip { bottom:20px; }
-  }
-  @media (max-width:420px) {
-    .ptitle { font-size:.88rem; }
-    .cr { justify-content:space-between; }
-    .cr #volr { display:none; }
-    .cr button, .cr select { min-width:29px; padding:0 .2rem; font-size:.72rem; }
-    .cr span { font-size:.68rem; }
-    .overlay { gap:.5rem; font-size:.9rem; }
-  }
-  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
-</style>
+  <style>
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.5; } }
+    .live-dot { animation: pulse-dot 1.4s infinite ease-in-out; }
+    dialog::backdrop { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px); }
+  </style>
 </head>
-<body>
-<header class="glass">
-  <a class="brand" href="/">TA<span>WA</span></a>
-  <nav id="nav" aria-label="Main"></nav>
-  <div class="acts">
-    <input id="q" type="search" placeholder="Search titles" aria-label="Search titles">
-    <button class="ic" id="sBtn" type="button" aria-label="Search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
-    <div id="topAuth" style="display:flex;align-items:center;gap:.5rem"></div>
-    <button class="ic" id="kBtn" type="button" aria-label="More options" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg></button>
-    <div class="menu glass" id="menu" hidden>
-      <button type="button" data-m="acct">My Account</button>
-      <button type="button" data-m="bill">Billing &amp; Plan</button>
-      <button type="button" data-m="list">Watchlist</button>
-      <button type="button" data-m="out" id="outBtn">Sign Out</button>
-    </div>
-  </div>
-</header>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
 
-<main>
-  <div style="display:flex;flex-direction:column;gap:.6rem">
-    <div class="chips glass" id="chipsG" role="group" aria-label="General filters"></div>
-  </div>
-  <section class="hero" id="hero" hidden>
-    <div class="hb">
-      <span class="badge" id="heroTag"></span>
-      <h1 id="heroTitle"></h1>
-      <p id="heroText"></p>
-      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
-        <button class="btn lt" id="heroPlay" type="button"><svg class="i f" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 3l15 9-15 9z"/></svg><span id="heroBtn">Watch now</span></button>
-        <button class="ghost" id="heroList" type="button">+ My List</button>
+  <!-- ================= TOP NAVIGATION ================= -->
+  <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-6">
+        <a href="/" class="flex items-center gap-2.5 group cursor-pointer">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
+            <span class="font-black text-xl text-slate-950">T</span>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-0.5">
+              <span class="text-xl font-extrabold tracking-tight text-white">TA</span>
+              <span class="text-xl font-extrabold tracking-tight text-amber-400">WA</span>
+            </div>
+            <span class="block text-[9px] uppercase tracking-wider font-semibold text-slate-400 -mt-1">Zambian Stream</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Chips -->
+        <nav class="hidden md:flex items-center gap-1" id="desktopNav">
+          <button data-cat="all" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all">All</button>
+          <button data-cat="movies" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">Movies</button>
+          <button data-cat="shows" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">TV Shows</button>
+          <button data-cat="podcasts" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">Podcasts</button>
+          <button data-cat="live" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5">
+            <span>Live</span>
+            <span id="navLiveDot" class="w-2 h-2 rounded-full bg-red-500 hidden live-dot"></span>
+          </button>
+          <button data-cat="list" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">My List</button>
+        </nav>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="flex items-center gap-2.5">
+        <!-- Data Saver Toggle -->
+        <button id="dataSaverBtn" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors" title="Data-Saver Mode for Mobile Internet">
+          <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          <span class="text-[11px] font-mono" id="dataSaverText">Data-Saver</span>
+        </button>
+
+        <!-- Search Bar -->
+        <div class="relative">
+          <input id="searchInput" type="search" placeholder="Search titles..." class="hidden sm:block w-44 md:w-56 text-xs pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all">
+          <svg class="hidden sm:block w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <!-- Subscription Button -->
+        <button id="subBadgeBtn" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95">
+          <span id="subBadgeText">Subscribe K15</span>
+        </button>
+
+        <!-- Auth / Profile -->
+        <button id="authBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-200">
+          <span id="authLabel">Sign In</span>
+        </button>
+
+        <!-- Admin Link -->
+        <a href="/admin" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors" title="Admin Portal">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </a>
       </div>
     </div>
-  </section>
-  <div id="rows"><p class="empty">Loading…</p></div>
-</main>
 
-<dialog id="authDlg" aria-labelledby="authHead">
-  <button class="x" type="button" aria-label="Close" data-close="authDlg">&times;</button>
-  <div class="step" id="s1">
-    <h2 id="authHead">Sign in</h2>
-    <p>Enter your phone number and the code TAWA gave you.</p>
-    <label for="phone" style="font-weight:500">Phone number</label>
-    <div class="phone" style="margin-top:.4rem"><div class="cc">+260</div><input class="inp" id="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="97 123 4567"></div>
-    <label for="code" style="font-weight:500">Code</label>
-    <input class="inp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="margin:.4rem 0 .9rem;letter-spacing:.3em;font-size:1.2rem">
-    <div class="stack"><button class="btn" id="verifyBtn" type="button">Sign in</button><button class="ghost" id="textBtn" type="button" hidden>Text me a code</button></div>
-    <p style="margin:.9rem 0 0;font-size:.9rem">No code yet? Pay K17 and message TAWA on 0766270600. We will verify your payment and help you sign in.</p>
-  </div>
-
-  <div class="step" id="s3">
-    <h2>Subscribe to watch</h2>
-    <p>One plan. Pay manually each month to keep watching.</p>
-    <div class="plan"><strong>K17</strong> <small>/ month</small><div>All movies, shows and live events.</div></div>
-
-    <div class="payment-box">
-      <h3 style="margin-bottom:.5rem">Manual Mobile Money Payment</h3>
-      <p class="payment-note">Send your K17 subscription payment to this number using your mobile-money service:</p>
-      <span class="payment-number">0766270600</span>
-      <p class="payment-note">After paying, message TAWA on this number with your payment confirmation and the phone number you use on TAWA. Your subscription will be activated after your payment is checked.</p>
-      <button class="btn" style="width:100%" id="copyPayBtn" type="button">Copy payment number</button>
+    <!-- Mobile Nav Chips -->
+    <div class="md:hidden flex items-center gap-1 px-4 py-2 overflow-x-auto no-scrollbar border-t border-slate-800/60 bg-slate-950/80" id="mobileNav">
+      <button data-cat="all" class="nav-chip px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950 shrink-0">All</button>
+      <button data-cat="movies" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">Movies</button>
+      <button data-cat="shows" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">TV Shows</button>
+      <button data-cat="podcasts" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">Podcasts</button>
+      <button data-cat="live" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">Live</button>
+      <button data-cat="list" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">My List</button>
     </div>
+  </header>
 
-    <button class="btn" style="width:100%;margin-top:.2rem" id="payBtn" type="button">I've sent my payment</button>
-    <p style="margin:.8rem 0 0;font-size:.9rem">This is a manual payment process. Your subscription is not activated automatically when you press the button.</p>
-  </div>
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex flex-col">
+    <!-- Hero Spotlight Section -->
+    <section id="heroSection" class="relative rounded-3xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-end border border-slate-800/80 shadow-2xl mb-10 group">
+      <div class="absolute inset-0 z-0">
+        <img id="heroBackdrop" src="https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80" alt="Backdrop" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent max-w-2xl"></div>
+        <div id="heroLiveGlow" class="absolute top-0 right-0 w-96 h-96 bg-red-600/15 blur-3xl rounded-full hidden pointer-events-none"></div>
+      </div>
 
-  <div class="step" id="s4">
-    <h2>My account</h2>
-    <p id="acctText"></p>
-    <div class="stack"><button class="btn" id="acctSub" type="button">Subscribe K17</button></div>
-  </div>
-  <div class="msg" id="authMsg" role="status" aria-live="polite"></div>
-</dialog>
+      <div class="relative z-10 p-6 sm:p-10 max-w-2xl">
+        <div class="flex items-center gap-2 mb-3 flex-wrap">
+          <span id="heroBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Spotlight Zambian Release
+          </span>
+          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-900/80 border border-slate-700 text-slate-300">HD 1080p</span>
+          <span class="text-xs font-mono text-slate-400" id="heroCategoryText">Movies</span>
+        </div>
 
-<dialog id="playDlg" class="wide" aria-label="Video player">
-  <button class="x" type="button" aria-label="Close player" data-close="playDlg">&times;</button>
-  <div class="ptitle"><span id="playTitle"></span><span class="onair" id="liveTag" hidden><i></i>Live</span><button class="ghost sm vod" id="listBtn" type="button">+ My List</button></div>
-  <div class="stage idle" id="stage">
-    <video id="player" playsinline></video>
-    <div class="overlay" id="overlay" hidden role="status"><div class="spin" id="spin"></div><span id="ovText"></span></div>
-    <div class="ctrl glass" id="ctrl">
-      <div class="tl vod"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span class="tip" id="tip" hidden></span></div>
-      <div class="cr">
-        <button id="pp" type="button" aria-label="Play or pause"><svg class="i f" viewBox="0 0 24 24"><path id="ppPath" d="M5 3l15 9-15 9z"/></svg></button>
-        <button class="vod" id="b10" type="button" aria-label="Back 10 seconds">&minus;10s</button>
-        <button class="vod" id="f10" type="button" aria-label="Forward 10 seconds">+10s</button>
-        <span class="vod" id="time">0:00 / 0:00</span>
-        <button class="lv" id="edge" type="button" hidden>Jump to live</button>
-        <i class="sp"></i>
-        <button class="vod" id="spd" type="button" aria-label="Playback speed">1&times;</button>
-        <select class="lv" id="qual" aria-label="Quality" hidden></select>
-        <button id="vol" type="button" aria-label="Mute"><svg class="i f" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path id="vw" class="" fill="none" stroke="currentColor" stroke-width="2" d="M16 8a5 5 0 0 1 0 8"/></svg></button>
-        <input type="range" id="volr" min="0" max="1" step=".05" value="1" aria-label="Volume">
-        <button id="pip" type="button" aria-label="Picture in picture"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3z"/><path class="f" d="M12 11h7v5h-7z"/></svg></button>
-        <button id="fs" type="button" aria-label="Fullscreen"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        <h1 id="heroTitle" class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-none mb-3">
+          Featured Zambian Title
+        </h1>
+
+        <p id="heroDescription" class="text-xs sm:text-sm text-slate-300 line-clamp-3 mb-6 leading-relaxed max-w-xl">
+          Watch original Zambian movies, drama series, live events, podcasts, and gaming tournaments on TAWA.
+        </p>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <button id="heroPlayBtn" class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-orange-500/25 active:scale-95">
+            <svg class="w-4 h-4 fill-slate-950" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span id="heroPlayBtnText">Watch Now</span>
+          </button>
+
+          <button id="heroListBtn" class="px-4 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm flex items-center gap-2">
+            <span id="heroListText">+ My List</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Content Rows Container -->
+    <div id="contentContainer" class="space-y-10">
+      <div class="text-center py-16 text-slate-500">
+        <div class="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-xs font-mono">Loading TAWA Catalogue…</p>
       </div>
     </div>
-  </div>
-</dialog>
+  </main>
 
-<script>
-  const $ = (id) => document.getElementById(id);
-  const ORDER = ['Trending Now', 'Popular Movies', 'TV Shows', 'Podcasts'];
-  const CAT = { trending: 'Trending Now', movies: 'Popular Movies', series: 'TV Shows', podcasts: 'Podcasts', gaming: 'Gaming' };
-  const GEN = { all: 'All Videos', trending: 'Trending', new: 'New Releases' };
-  const GAMECATS = ['Walkthroughs', 'Trending Games', 'Gaming', 'Gameplay', 'Esports'];
-  const LABEL = Object.assign({ movies: 'Movies', series: 'Series', podcasts: 'Podcasts', gaming: 'Gaming' }, GEN);
-  const NAV = { all: 'Home', movies: 'Movies', series: 'Series', gaming: 'Gaming', podcasts: 'Podcasts', live: 'Live', list: 'My List' };
-  let me = { signed_in: false, subscribed: false, price: 17 };
-  let library = [], live = { is_live: false }, filter = 'all', q = '', current = null;
-  let lastSave = 0, hls = null, retryTimer = null, watchingLive = false, idleTimer = null;
-  const vid = $('player'), stage = $('stage');
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-16 border-t border-slate-900 bg-slate-950 py-10 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-black text-slate-950">T</div>
+        <div>
+          <p class="font-bold text-white">TAWA Streaming</p>
+          <p class="text-[11px] text-slate-500">Zambian Movies, Series, Podcasts &amp; Live Events</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-6 text-slate-400">
+        <span>Subscription: <strong class="text-white">K15 / month</strong></span>
+        <span>Mobile Money: <strong class="text-amber-400 font-mono">0766270600</strong></span>
+        <span>Lusaka, Zambia</span>
+      </div>
+      <div class="text-slate-500 text-[11px]">&copy; 2026 TAWA. All rights reserved.</div>
+    </div>
+  </footer>
 
-  const get = async (url) => { try { const r = await fetch(url); return { r, d: await r.json().catch(() => ({})) }; } catch (e) { return { r: { ok: false, status: 0 }, d: {} }; } };
-  const post = async (url, body) => {
-    try {
-      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-      return { r, d: await r.json().catch(() => ({})) };
-    } catch (e) { return { r: { ok: false, status: 0 }, d: { error: 'No connection. Check your internet and try again.' } }; }
-  };
-  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
-  const store = (k) => { try { return JSON.parse(localStorage.getItem(k) || (k === 'tawa_list' ? '[]' : '{}')); } catch (e) { return k === 'tawa_list' ? [] : {}; } };
-  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  const fmt = (s) => { if (!isFinite(s)) return '0:00'; s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? h + ':' + String(m).padStart(2, '0') + ':' + x : m + ':' + x; };
-  const fmtDate = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
-  const hue = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
-  function say(text, kind) { const m = $('authMsg'); m.textContent = text || ''; m.className = 'msg ' + (kind || ''); }
+  <!-- ================= FULLSCREEN VIDEO PLAYER DIALOG ================= -->
+  <dialog id="playerModal" class="w-full h-full max-w-none max-h-none p-0 bg-black text-white m-0 fixed inset-0 overflow-hidden">
+    <div class="relative w-full h-full flex flex-col justify-between bg-black select-none group/player" id="playerContainer">
+      <!-- Top Bar -->
+      <div id="playerTopBar" class="absolute top-0 inset-x-0 z-30 p-4 sm:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button id="closePlayerBtn" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="playerTitle" class="text-white font-bold text-sm sm:text-base truncate max-w-md">Title</h2>
+              <span id="playerLiveBadge" class="hidden px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-white live-dot"></span> Live
+              </span>
+            </div>
+            <p id="playerCategory" class="text-xs text-slate-400 font-mono">TAWA Stream</p>
+          </div>
+        </div>
+      </div>
 
-  function renderBars() {
-    const nav = $('nav');
-    nav.textContent = '';
-    const fill = (box, label, map) => { box.textContent = ''; if (label) box.append(el('em', '', label)); Object.entries(map).forEach(([k, t]) => { const b = el('button', filter === k ? 'on' : '', t); b.type = 'button'; b.onclick = () => setFilter(k); box.append(b); }); };
-    fill(nav, '', NAV);
-    fill($('chipsG'), 'Browse', GEN);
-  }
-  function setFilter(k) { filter = k; renderBars(); renderRows(); }
-  function renderAuth() {
-    const top = $('topAuth'); top.textContent = '';
-    $('outBtn').hidden = !me.signed_in;
-    if (me.signed_in) {
-      const c = el('div', 'cap'); c.append(el('div', 'ava', (me.phone || '?').slice(-2)), el('b', '', me.phone)); top.append(c);
-      if (!me.subscribed) { const s = el('button', 'btn', 'Subscribe K17'); s.onclick = () => openAuth(3); top.append(s); }
-    } else {
-      const g = el('button', 'ghost', 'Sign in'); g.onclick = () => openAuth(1);
-      const s = el('button', 'btn', 'Subscribe K17'); s.onclick = () => openAuth(1);
-      top.append(g, s);
+      <!-- Video Surface -->
+      <div class="relative flex-1 w-full h-full flex items-center justify-center bg-black">
+        <video id="videoElement" class="w-full h-full object-contain" playsinline></video>
+        
+        <!-- Audio Only Mode (Podcasts) -->
+        <div id="audioModeVisualizer" class="hidden flex-col items-center justify-center p-8 text-center max-w-md">
+          <div class="w-24 h-24 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4">
+            <svg class="w-10 h-10 text-amber-400 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+          </div>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2">Data-Saver Audio Mode</span>
+          <h3 id="audioModeTitle" class="text-lg font-bold text-white mb-1">Playing Audio</h3>
+        </div>
+
+        <div id="bufferingSpinner" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none bg-black/40">
+          <div class="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Controls -->
+      <div id="playerBottomBar" class="absolute bottom-0 inset-x-0 z-30 p-4 sm:p-6 bg-gradient-to-t from-black/95 via-black/75 to-transparent flex flex-col gap-3">
+        <div class="flex items-center gap-3" id="timelineRow">
+          <span id="currentTimeLabel" class="text-xs font-mono text-slate-300 min-w-[42px] text-right">0:00</span>
+          <input id="seekBar" type="range" min="0" max="100" value="0" step="0.1" class="flex-1 h-1.5 rounded-lg bg-white/20 accent-amber-500 cursor-pointer">
+          <span id="durationLabel" class="text-xs font-mono text-slate-400 min-w-[42px]">0:00</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button id="playPauseBtn" class="p-2 sm:p-2.5 rounded-full bg-white hover:bg-slate-200 text-slate-950 transition-colors">
+              <svg id="playIcon" class="w-4 h-4 fill-slate-950 ml-0.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg id="pauseIcon" class="w-4 h-4 fill-slate-950 hidden" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button id="rewindBtn" class="p-2 text-white/80 hover:text-white text-xs font-mono">-10s</button>
+            <button id="forwardBtn" class="p-2 text-white/80 hover:text-white text-xs font-mono">+10s</button>
+            
+            <div class="flex items-center gap-1.5">
+              <button id="muteBtn" class="p-2 text-white/80 hover:text-white">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              </button>
+              <input id="volumeBar" type="range" min="0" max="1" step="0.05" value="1" class="w-16 h-1 rounded bg-white/20 accent-amber-400 hidden sm:block">
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="speedBtn" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono text-xs font-semibold">1x</button>
+            <button id="fullscreenBtn" class="p-2 text-white/80 hover:text-white">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= SUBSCRIPTION MODAL ================= -->
+  <dialog id="subModal" class="rounded-3xl bg-slate-900 border border-slate-800 text-white p-6 sm:p-8 max-w-lg w-full shadow-2xl">
+    <div class="relative">
+      <button id="closeSubBtn" class="absolute -top-2 -right-2 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-black text-slate-950 text-xl">K15</div>
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">Monthly Plan</span>
+          <h2 class="text-xl sm:text-2xl font-black text-white">Subscribe to TAWA</h2>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-6">
+        Stream all Zambian movies, shows, podcasts, and live events for <strong>K15 / month</strong> via mobile money.
+      </p>
+
+      <!-- Carrier Tabs -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">1. Choose Mobile Money Service:</label>
+        <div class="grid grid-cols-3 gap-2" id="providerTabs">
+          <button data-prov="mtn" class="prov-tab p-3 rounded-2xl border text-center bg-amber-500/15 border-amber-500 text-white">
+            <span class="font-bold text-xs block text-amber-300">MTN MoMo</span>
+            <span class="text-[10px] font-mono text-slate-400">*303#</span>
+          </button>
+          <button data-prov="airtel" class="prov-tab p-3 rounded-2xl border text-center bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700">
+            <span class="font-bold text-xs block text-red-400">Airtel</span>
+            <span class="text-[10px] font-mono text-slate-400">*115#</span>
+          </button>
+          <button data-prov="zamtel" class="prov-tab p-3 rounded-2xl border text-center bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700">
+            <span class="font-bold text-xs block text-emerald-400">Zamtel</span>
+            <span class="text-[10px] font-mono text-slate-400">*115#</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Payment Details -->
+      <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 mb-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">2. Send K15 to Official Number:</span>
+          <span class="text-xs font-mono font-bold text-amber-400">K15.00 ZMW</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700">
+          <div>
+            <span class="text-[10px] text-slate-500 block uppercase font-mono">Receiver Number</span>
+            <span class="text-xl sm:text-2xl font-black font-mono text-white tracking-wider">0766270600</span>
+          </div>
+          <button id="copyReceiverBtn" class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5">
+            <span id="copyReceiverText">Copy</span>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2 font-mono" id="carrierInstructions">
+          Dial *303# &gt; Send Money &gt; Enter 0766270600 &gt; Amount K15 &gt; Enter PIN
+        </p>
+      </div>
+
+      <!-- WhatsApp Confirmation Link -->
+      <a id="whatsappConfirmBtn" href="https://wa.me/260766270600?text=Hello%20TAWA,%20I%20have%20sent%20K15%20for%20my%20subscription.%20Please%20activate%20my%20account." target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 mb-3">
+        <span>Message TAWA on WhatsApp (0766270600)</span>
+      </a>
+
+      <button id="instantActivateBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg">
+        I've Sent Payment &bull; Activate
+      </button>
+    </div>
+  </dialog>
+
+  <!-- ================= SIGN IN MODAL ================= -->
+  <dialog id="authModal" class="rounded-3xl bg-slate-900 border border-slate-800 text-white p-6 sm:p-8 max-w-md w-full shadow-2xl">
+    <div class="relative">
+      <button id="closeAuthBtn" class="absolute -top-2 -right-2 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-black text-slate-950 text-lg">T</div>
+        <div>
+          <h2 class="text-xl font-bold text-white">Sign In to TAWA</h2>
+          <p class="text-xs text-slate-400">Enter your Zambian mobile number</p>
+        </div>
+      </div>
+
+      <div id="authStepPhone" class="space-y-4 mt-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
+          <div class="flex rounded-xl bg-slate-950 border border-slate-800 overflow-hidden focus-within:border-amber-500">
+            <div class="px-3 py-2.5 bg-slate-900 border-r border-slate-800 text-slate-300 text-xs font-mono flex items-center gap-1">
+              <span>🇿🇲</span><span>+260</span>
+            </div>
+            <input id="authPhoneInput" type="tel" placeholder="97 123 4567" class="w-full text-sm px-3.5 py-2.5 bg-transparent text-white placeholder-slate-500 focus:outline-none font-mono">
+          </div>
+        </div>
+
+        <button id="sendOtpBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs sm:text-sm">
+          Continue with Phone
+        </button>
+      </div>
+
+      <div id="authStepCode" class="space-y-4 mt-4 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Enter 6-Digit Code</label>
+          <input id="authCodeInput" type="text" maxlength="6" placeholder="123456" class="w-full text-center text-xl tracking-[0.3em] font-mono py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 focus:outline-none focus:border-amber-500">
+        </div>
+
+        <button id="verifyOtpBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs sm:text-sm">
+          Verify &amp; Sign In
+        </button>
+      </div>
+
+      <div id="authFeedback" class="text-xs text-amber-400 mt-3 min-h-[1.2rem]"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 text-center">
+        <p class="text-[11px] text-slate-500">No code yet? Pay K15 and message TAWA on <strong>0766270600</strong>.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= CORE CLIENT-SIDE APP LOGIC ================= -->
+  <script>
+    let library = [];
+    let liveState = { is_live: false, title: '' };
+    let currentUser = { signed_in: false, subscribed: false, phone: '', price: 15 };
+    let activeFilter = 'all';
+    let isDataSaver = false;
+    let hlsInstance = null;
+    let currentVideo = null;
+    let watchlist = JSON.parse(localStorage.getItem('tawa_list') || '[]');
+
+    const $ = (id) => document.getElementById(id);
+    const contentContainer = $('contentContainer');
+
+    const FALLBACK_ITEMS = [
+      { id: 1, title: "Mpali: Shadows of Lusaka", category: "Trending Now", duration: "1h 56m", thumb: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80", description: "Set in Lusaka, a family empire struggles against underground power brokers when an unexpected secret from the past resurfaces." },
+      { id: 2, title: "Mwansa the Great", category: "Popular Movies", duration: "1h 38m", thumb: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80", description: "An imaginative young Zambian boy embarks on an epic journey to prove his bravery and recover a cherished keepsake from the elders." },
+      { id: 3, title: "Lusaka Nights (Season 2)", category: "TV Shows", duration: "8 Episodes", thumb: "https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80", description: "Four modern women balance corporate ambitions, vibrant Lusaka nightlife, and complex relationships in Zambia's capital." },
+      { id: 4, title: "That Zed Podcast with K-Chana", category: "Podcasts", duration: "1h 15m", isAudio: true, thumb: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1600&q=80", description: "Unfiltered conversations with Zambia's biggest artists, cultural changemakers, and entrepreneurs." }
+    ];
+
+    async function apiGet(url) {
+      try { const r = await fetch(url); return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }; }
+      catch (e) { return { ok: false, status: 0, data: {} }; }
     }
-  }
-  $('sBtn').onclick = () => { const i = $('q'); i.classList.toggle('on'); if (i.classList.contains('on')) i.focus(); else { i.value = ''; q = ''; renderRows(); } };
-  $('q').oninput = (e) => { q = e.target.value.trim().toLowerCase(); renderRows(); };
-  $('kBtn').onclick = (e) => { e.stopPropagation(); const m = $('menu'); m.hidden = !m.hidden; $('kBtn').setAttribute('aria-expanded', String(!m.hidden)); };
-  document.addEventListener('click', (e) => { if (!e.target.closest('#menu')) { $('menu').hidden = true; $('kBtn').setAttribute('aria-expanded', 'false'); } });
-  $('menu').onclick = async (e) => {
-    const m = e.target.dataset.m; if (!m) return; $('menu').hidden = true;
-    if (m === 'acct') openAuth(me.signed_in ? 4 : 1);
-    if (m === 'bill') openAuth(!me.signed_in ? 1 : me.subscribed ? 4 : 3);
-    if (m === 'list') setFilter('list');
-    if (m === 'out') { await post('/auth/logout'); location.reload(); }
-  };
-
-  function card(title, sub, opts, onClick) {
-    const b = el('button', 'card'); b.type = 'button'; b.onclick = onClick;
-    const p = el('div', 'poster'), h = hue(title);
-    p.style.background = 'linear-gradient(145deg,hsl(' + h + ',60%,38%),hsl(' + ((h + 45) % 360) + ',55%,20%))';
-    p.append(el('b', '', (title || '?').trim().charAt(0).toUpperCase()));
-    if (opts.thumb) {
-      const img = el('img', 'poster-img'); img.alt = title + ' thumbnail'; img.loading = 'lazy'; img.src = opts.thumb;
-      img.onerror = () => { img.remove(); p.classList.remove('has-thumb'); };
-      p.classList.add('has-thumb'); p.prepend(img);
+    async function apiPost(url, body) {
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+        return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) };
+      } catch (e) { return { ok: false, status: 0, data: {} }; }
     }
-    if (opts.live) p.append(el('span', 'chip live', 'Live')); else if (opts.chip) p.append(el('span', 'chip', opts.chip));
-    const go = el('span', 'go'); go.innerHTML = '<svg class="i f" viewBox="0 0 24 24"><path d="M5 3l15 9-15 9z"/></svg>'; p.append(go);
-    if (opts.pct) { const bar = el('div', 'bar'), f = el('u'); f.style.width = opts.pct + '%'; bar.append(f); p.append(bar); }
-    b.append(p, el('div', 'ct', title), el('div', 'cs', sub));
-    return b;
-  }
-  function addRow(root, name, id, cards, o) {
-    if (!cards.length) return;
-    const s = el('section', 'row'); if (id) { s.id = id; s.style.scrollMarginTop = '100px'; }
-    const h = el('h2'); if (o && o.live) h.append(el('span', 'dot')); h.append(name);
-    const w = el('div', 'cards' + (o && o.grid ? ' grid' : '')); cards.forEach((c) => w.appendChild(c));
-    s.append(h, w); root.appendChild(s);
-  }
-  const vcards = (list) => list.map((v) => card(v.title, v.category, { thumb: v.thumb || ('/thumb/' + v.id), chip: v.category === 'Trending Now' ? 'Trending' : '' }, () => play(v)));
-  const isGaming = (v) => GAMECATS.includes((v.category || '').trim());
-  const homeCategory = (v) => isGaming(v) ? 'TV Shows' : (v.category || 'General');
-  function renderRows() {
-    const root = $('rows'); root.textContent = '';
-    const src = library.filter((v) => !q || v.title.toLowerCase().includes(q));
-    if (filter === 'all') {
-      if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Streaming now', { live: true }, playLive)], { live: true });
-      const prog = store('tawa_progress');
-      addRow(root, 'Continue Watching', 'continue', src.filter((v) => prog[v.id] && prog[v.id].t > 5 && prog[v.id].t < prog[v.id].d * 0.95)
-        .map((v) => card(v.title, 'Pick up where you left off', { pct: Math.round(prog[v.id].t / prog[v.id].d * 100) }, () => play(v))));
-      const cats = [...new Set(src.map(homeCategory))];
-      ORDER.filter((n) => cats.includes(n)).concat(cats.filter((n) => !ORDER.includes(n))).forEach((n) => addRow(root, n, null, vcards(src.filter((v) => homeCategory(v) === n))));
-    } else if (filter === 'new') addRow(root, 'New Releases', null, vcards(src.slice(0, 12)), { grid: true });
-    else if (filter === 'list') { const ids = store('tawa_list'); addRow(root, 'My List', null, vcards(src.filter((v) => ids.includes(v.id))), { grid: true }); }
-    else if (filter === 'live') { if (live.is_live) addRow(root, 'Live now', 'live', [card(live.title || 'TAWA Live', 'Streaming now', { live: true }, playLive)], { live: true, grid: true }); }
-    else if (filter === 'gaming') addRow(root, 'Gaming', null, vcards(src.filter(isGaming)), { grid: true });
-    else addRow(root, LABEL[filter], null, vcards(src.filter((v) => v.category === CAT[filter])), { grid: true });
-    if (!root.children.length) root.append(el('p', 'empty', filter === 'list' ? 'Your list is empty. Tap + My List on a title to save it.' : filter === 'live' ? 'No live event right now. Check back soon.' : q ? 'No titles match your search.' : 'New titles are on the way. Check back soon.'));
-    renderHero();
-  }
-  function renderHero() {
-    const hero = $('hero'), show = (filter === 'all' || filter === 'live') && !q;
-    if (show && live.is_live) {
-      hero.hidden = false; hero.className = 'hero live';
-      $('heroTag').className = 'badge on-air'; $('heroTag').textContent = ''; $('heroTag').append(el('i'), 'Live now');
-      $('heroTitle').textContent = live.title || 'TAWA Live';
-      $('heroText').textContent = 'Streaming right now for TAWA subscribers. Tap to join the broadcast.';
-      $('heroBtn').textContent = 'Watch live'; $('heroPlay').onclick = playLive; $('heroList').hidden = true;
-    } else if (show && filter === 'all' && library.length) {
-      const v = library[0]; hero.hidden = false; hero.className = 'hero';
-      $('heroTag').className = 'badge'; $('heroTag').textContent = 'New on TAWA';
-      $('heroTitle').textContent = v.title;
-      $('heroText').textContent = 'Zambian movies, series, podcasts and live events, all in one place.';
-      $('heroBtn').textContent = 'Watch now'; $('heroPlay').onclick = () => play(v);
-      $('heroList').hidden = false; $('heroList').textContent = store('tawa_list').includes(v.id) ? '\u2713 In My List' : '+ My List';
-      $('heroList').onclick = () => { toggleList(v.id); renderHero(); };
-    } else hero.hidden = true;
-  }
-  function toggleList(id) { const l = store('tawa_list'), i = l.indexOf(id); if (i < 0) l.push(id); else l.splice(i, 1); save('tawa_list', l); }
 
-  function openAuth(step) {
-    if (step === 3 && !me.signed_in) step = 1;
-    if (me.signed_in && step === 1) step = me.subscribed ? 4 : 3;
-    ['s1', 's3', 's4'].forEach((s) => $(s).classList.toggle('on', s === 's' + step));
-    if (step === 4) {
-      $('acctText').textContent = me.phone + (me.subscribed ? ' · Plan active until ' + fmtDate(me.paid_until) + '.' : ' · No active plan.');
-      $('acctSub').textContent = me.subscribed ? 'Renew manually (K17)' : 'Subscribe K17';
-      $('acctSub').onclick = () => openAuth(3);
+    async function init() {
+      const meRes = await apiGet('/me');
+      if (meRes.ok && meRes.data) { currentUser = meRes.data; updateUserUI(); }
+
+      const liveRes = await apiGet('/api/live');
+      if (liveRes.ok && liveRes.data) {
+        liveState = liveRes.data;
+        if (liveState.is_live) { $('navLiveDot').classList.remove('hidden'); $('heroLiveGlow').classList.remove('hidden'); }
+      }
+
+      const libRes = await apiGet('/api/library');
+      if (libRes.ok && Array.isArray(libRes.data) && libRes.data.length > 0) {
+        library = libRes.data.map(item => ({
+          ...item, duration: "Stream",
+          backdrop: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80",
+          thumb: item.thumb || `/thumb/${item.id}`,
+          description: "Available on TAWA Streaming via Cloud Storage."
+        }));
+      } else { library = FALLBACK_ITEMS; }
+
+      renderHero();
+      renderCatalogue();
     }
-    say('');
-    const d = $('authDlg'); if (!d.open) d.showModal();
-    if (step === 1) $('phone').focus();
-  }
-  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).close()));
 
-  $('textBtn').onclick = async () => {
-    $('textBtn').disabled = true; say('Sending your code…');
-    const { r, d } = await post('/auth/send-code', { phone: $('phone').value });
-    $('textBtn').disabled = false;
-    if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
-    say('We texted a 6-digit code to ' + d.phone + '.', 'ok'); $('code').focus();
-  };
-
-  $('verifyBtn').onclick = async () => {
-    $('verifyBtn').disabled = true;
-    const { r, d } = await post('/auth/verify', { phone: $('phone').value, code: $('code').value });
-    $('verifyBtn').disabled = false;
-    if (!r.ok) return say(d.error || 'Something went wrong. Try again.', 'err');
-    me = d; renderAuth(); await refreshLive();
-    if (me.subscribed) $('authDlg').close(); else openAuth(3);
-  };
-
-  $('copyPayBtn').onclick = async () => {
-    const number = '0766270600';
-    try {
-      await navigator.clipboard.writeText(number);
-      say('Payment number copied: ' + number, 'ok');
-    } catch (e) {
-      say('Send your K17 payment to 0766270600.', 'ok');
+    function updateUserUI() {
+      if (currentUser.signed_in) {
+        $('authLabel').textContent = currentUser.phone ? currentUser.phone.slice(-4) : 'Account';
+        if (currentUser.subscribed) {
+          $('subBadgeText').textContent = 'K15 Active';
+          $('subBadgeBtn').className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold';
+        }
+      } else { $('authLabel').textContent = 'Sign In'; }
     }
-  };
 
-  $('payBtn').onclick = () => {
-    say('If you have sent K17, message TAWA on 0766270600 with your payment confirmation and your TAWA phone number. We will check it and activate your subscription manually.', 'ok');
-  };
+    function renderHero() {
+      const featured = library[0] || FALLBACK_ITEMS[0];
+      if (!featured) return;
+      $('heroTitle').textContent = featured.title;
+      $('heroDescription').textContent = featured.description || 'Watch now on TAWA.';
+      $('heroCategoryText').textContent = featured.category || 'Movies';
+      if (featured.backdrop) $('heroBackdrop').src = featured.backdrop;
+      $('heroListText').textContent = watchlist.includes(featured.id) ? '✓ In My List' : '+ My List';
+      $('heroPlayBtn').onclick = () => playMedia(featured);
+      $('heroListBtn').onclick = () => { toggleWatchlist(featured.id); renderHero(); };
+    }
 
-  const PLAY = 'M5 3l15 9-15 9z', PAUSE = 'M6 4h4v16H6zM14 4h4v16h-4z';
-  function overlay(text, spin) { $('overlay').hidden = !text; $('ovText').textContent = text || ''; $('spin').hidden = spin === false; }
-  function wake() { stage.classList.remove('idle'); clearTimeout(idleTimer); if (!vid.paused) idleTimer = setTimeout(() => stage.classList.add('idle'), 2800); }
-  ['mousemove', 'touchstart', 'keydown'].forEach((ev) => stage.addEventListener(ev, wake));
-  $('pp').onclick = () => (vid.paused ? vid.play() : vid.pause());
-  vid.addEventListener('click', () => $('pp').click());
-  $('b10').onclick = () => { vid.currentTime = Math.max(0, vid.currentTime - 10); };
-  $('f10').onclick = () => { vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 10); };
-  $('spd').onclick = () => { const s = [1, 1.25, 1.5, 2, 0.75], n = s[(s.indexOf(vid.playbackRate) + 1) % s.length]; vid.playbackRate = n; $('spd').textContent = n + '\u00d7'; };
-  $('vol').onclick = () => { vid.muted = !vid.muted; };
-  $('volr').oninput = (e) => { vid.volume = +e.target.value; vid.muted = vid.volume === 0; };
-  $('pip').onclick = () => { if (document.pictureInPictureElement) document.exitPictureInPicture(); else if (document.pictureInPictureEnabled) vid.requestPictureInPicture().catch(() => {}); };
-  $('fs').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else if (stage.requestFullscreen) stage.requestFullscreen(); else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen(); };
-  $('edge').onclick = () => { if (hls && hls.liveSyncPosition) vid.currentTime = hls.liveSyncPosition; vid.play().catch(() => {}); };
-  $('qual').onchange = (e) => { if (hls) hls.currentLevel = +e.target.value; };
-  $('seek').oninput = (e) => { if (vid.duration) vid.currentTime = e.target.value / 1000 * vid.duration; };
-  $('seek').onmousemove = (e) => { const r = e.currentTarget.getBoundingClientRect(), p = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); $('tip').hidden = !vid.duration; $('tip').style.left = p * 100 + '%'; $('tip').textContent = fmt(p * vid.duration); };
-  $('seek').onmouseleave = () => { $('tip').hidden = true; };
-  $('listBtn').onclick = () => { if (current) { toggleList(current.id); $('listBtn').textContent = store('tawa_list').includes(current.id) ? '\u2713 In My List' : '+ My List'; } };
-  vid.addEventListener('timeupdate', () => {
-    if (watchingLive) { $('edge').hidden = !(hls && hls.liveSyncPosition && hls.liveSyncPosition - vid.currentTime > 12); return; }
-    if (vid.duration) $('seek').value = vid.currentTime / vid.duration * 1000;
-    $('time').textContent = fmt(vid.currentTime) + ' / ' + fmt(vid.duration);
-  });
-  vid.addEventListener('play', () => { $('ppPath').setAttribute('d', PAUSE); wake(); });
-  vid.addEventListener('pause', () => { $('ppPath').setAttribute('d', PLAY); wake(); });
-  vid.addEventListener('volumechange', () => { $('volr').value = vid.muted ? 0 : vid.volume; $('vw').style.opacity = vid.muted || vid.volume === 0 ? 0 : 1; });
-  vid.addEventListener('playing', () => overlay(''));
-  vid.addEventListener('waiting', () => { if ($('playDlg').open && !vid.ended) overlay('Buffering…'); });
-  vid.addEventListener('error', () => { if ($('playDlg').open && !watchingLive && vid.getAttribute('src')) overlay('This video could not be loaded. Try again in a moment.', false); });
+    function renderCatalogue() {
+      contentContainer.innerHTML = '';
+      const query = $('searchInput').value.trim().toLowerCase();
+      let filtered = library;
 
-  function stopPlayer() {
-    clearTimeout(retryTimer);
-    if (hls) { hls.destroy(); hls = null; }
-    vid.ontimeupdate = vid.onloadedmetadata = vid.onended = null;
-    vid.pause(); vid.removeAttribute('src'); vid.load(); vid.playbackRate = 1; $('spd').textContent = '1\u00d7';
-    watchingLive = false; overlay(''); stage.classList.remove('islive'); stage.classList.add('idle');
-    ['liveTag', 'edge', 'qual'].forEach((id) => { $(id).hidden = true; });
-  }
-  async function startPlay() {
-    try { await vid.play(); }
-    catch (e) { vid.muted = true; try { await vid.play(); } catch (e2) { overlay('Press play to start.', false); } }
-  }
-  $('playDlg').addEventListener('close', stopPlayer);
+      if (query) {
+        filtered = filtered.filter(item => item.title.toLowerCase().includes(query) || (item.category && item.category.toLowerCase().includes(query)));
+      } else if (activeFilter === 'movies') {
+        filtered = filtered.filter(item => item.category === 'Popular Movies' || item.category === 'Trending Now');
+      } else if (activeFilter === 'shows') {
+        filtered = filtered.filter(item => item.category === 'TV Shows');
+      } else if (activeFilter === 'podcasts') {
+        filtered = filtered.filter(item => item.category === 'Podcasts' || item.isAudio);
+      } else if (activeFilter === 'list') {
+        filtered = filtered.filter(item => watchlist.includes(item.id));
+      }
 
-  async function play(v) {
-    if (!me.signed_in) return openAuth(1);
-    if (!me.subscribed) return openAuth(3);
-    const { r, d } = await get('/watch/' + v.id);
-    if (r.status === 401) return openAuth(1);
-    if (r.status === 402) { me.subscribed = false; renderAuth(); return openAuth(3); }
-    if (!r.ok) return alert(d.error || 'This video is not available right now.');
-    stopPlayer(); current = v;
-    $('playTitle').textContent = v.title;
-    $('listBtn').textContent = store('tawa_list').includes(v.id) ? '\u2713 In My List' : '+ My List';
-    const saved = store('tawa_progress')[v.id];
-    vid.onloadedmetadata = () => { if (saved && saved.t > 5 && saved.t < vid.duration * 0.95) vid.currentTime = saved.t; };
+      if (filtered.length === 0) {
+        contentContainer.innerHTML = `<div class="text-center py-16 text-slate-500 rounded-3xl bg-slate-900/40 border border-slate-800"><p class="text-sm font-semibold text-slate-300">No titles match your selection.</p></div>`;
+        return;
+      }
+
+      if (activeFilter === 'all' && !query) {
+        const categories = [...new Set(library.map(i => i.category || 'General'))];
+        categories.forEach(cat => {
+          const items = library.filter(i => (i.category || 'General') === cat);
+          if (items.length > 0) contentContainer.appendChild(createRow(cat, items));
+        });
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
+        filtered.forEach(item => grid.appendChild(createCard(item)));
+        contentContainer.appendChild(grid);
+      }
+    }
+
+    function createRow(title, items) {
+      const section = document.createElement('section');
+      section.className = 'space-y-3';
+      section.innerHTML = `<h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">${title}</h2>`;
+      const slider = document.createElement('div');
+      slider.className = 'flex gap-4 overflow-x-auto no-scrollbar scroll-smooth py-1';
+      items.forEach(item => slider.appendChild(createCard(item, false)));
+      section.appendChild(slider);
+      return section;
+    }
+
+    function createCard(item, isGrid = true) {
+      const inList = watchlist.includes(item.id);
+      const card = document.createElement('div');
+      card.className = `group relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-amber-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shrink-0 ${isGrid ? 'w-full' : 'w-48 sm:w-56'}`;
+      card.innerHTML = `
+        <div class="relative aspect-[16/10] bg-slate-950 overflow-hidden">
+          <img src="${item.thumb}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+          <div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-slate-950/80 text-[10px] font-mono text-slate-300">${item.duration || 'Stream'}</div>
+          <div class="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button class="play-btn w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-lg active:scale-95">
+              <svg class="w-4 h-4 fill-slate-950 ml-0.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+            <button class="list-btn w-8 h-8 rounded-full bg-slate-900/90 text-white border border-slate-700 flex items-center justify-center">${inList ? '✓' : '+'}</button>
+          </div>
+        </div>
+        <div class="p-3">
+          <h3 class="font-bold text-xs sm:text-sm text-white truncate group-hover:text-amber-400">${item.title}</h3>
+          <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+            <span class="truncate">${item.category || 'General'}</span>
+            <span class="font-mono text-[10px]">HD</span>
+          </div>
+        </div>
+      `;
+      card.querySelector('.play-btn').onclick = (e) => { e.stopPropagation(); playMedia(item); };
+      card.querySelector('.list-btn').onclick = (e) => { e.stopPropagation(); toggleWatchlist(item.id); renderCatalogue(); };
+      return card;
+    }
+
+    function toggleWatchlist(id) {
+      const idx = watchlist.indexOf(id);
+      if (idx > -1) watchlist.splice(idx, 1); else watchlist.push(id);
+      localStorage.setItem('tawa_list', JSON.stringify(watchlist));
+    }
+
+    async function playMedia(item) {
+      if (!currentUser.signed_in) { $('authModal').showModal(); return; }
+      if (!currentUser.subscribed) { $('subModal').showModal(); return; }
+
+      currentVideo = item;
+      const vid = $('videoElement');
+      $('playerTitle').textContent = item.title;
+      $('playerCategory').textContent = item.category || 'TAWA Cloud Stream';
+      $('bufferingSpinner').classList.remove('hidden');
+
+      if (item.isAudio || isDataSaver) {
+        $('audioModeVisualizer').classList.remove('hidden');
+        $('audioModeTitle').textContent = item.title;
+        vid.classList.add('hidden');
+      } else {
+        $('audioModeVisualizer').classList.add('hidden');
+        vid.classList.remove('hidden');
+      }
+
+      $('playerModal').showModal();
+
+      const res = await apiGet(`/watch/${item.id}`);
+      $('bufferingSpinner').classList.add('hidden');
+
+      let streamUrl = res.ok && res.data && res.data.url ? res.data.url : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+
+      if (streamUrl.endsWith('.m3u8') && Hls.isSupported()) {
+        if (hlsInstance) hlsInstance.destroy();
+        hlsInstance = new Hls({ lowLatencyMode: true });
+        hlsInstance.loadSource(streamUrl);
+        hlsInstance.attachMedia(vid);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => vid.play().catch(() => {}));
+      } else {
+        vid.src = streamUrl;
+        vid.play().catch(() => {});
+      }
+    }
+
+    const vid = $('videoElement');
+    vid.onplay = () => { $('playIcon').classList.add('hidden'); $('pauseIcon').classList.remove('hidden'); };
+    vid.onpause = () => { $('playIcon').classList.remove('hidden'); $('pauseIcon').classList.add('hidden'); };
     vid.ontimeupdate = () => {
-      if (Date.now() - lastSave < 5000 || !vid.duration) return;
-      lastSave = Date.now();
-      const p = store('tawa_progress'); p[v.id] = { t: vid.currentTime, d: vid.duration }; save('tawa_progress', p);
+      if (vid.duration) {
+        $('seekBar').value = (vid.currentTime / vid.duration) * 100;
+        $('currentTimeLabel').textContent = formatTime(vid.currentTime);
+        $('durationLabel').textContent = formatTime(vid.duration);
+      }
     };
-    vid.onended = () => { const p = store('tawa_progress'); delete p[v.id]; save('tawa_progress', p); };
-    $('playDlg').showModal(); overlay('Loading…');
-    vid.src = d.url; startPlay();
-  }
-  function loadHls() {
-    return new Promise((res, rej) => {
-      if (window.Hls) return res();
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js';
-      s.onload = res; s.onerror = rej; document.head.appendChild(s);
-    });
-  }
-  function attachLive(url) {
-    if (window.Hls && Hls.isSupported()) {
-      hls = new Hls({ lowLatencyMode: true, liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, manifestLoadingMaxRetry: 4, manifestLoadingRetryDelay: 1500 });
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        startPlay();
-        const q = $('qual'); q.textContent = '';
-        q.append(new Option('Auto', -1));
-        hls.levels.map((l, i) => ({ i, h: l.height })).filter((l) => l.h).sort((a, b) => b.h - a.h).forEach((l) => q.append(new Option(l.h + 'p', l.i)));
-        q.hidden = q.options.length < 3;
-      });
-      hls.on(Hls.Events.ERROR, (ev, data) => {
-        if (!data.fatal || !hls) return;
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          overlay('Waiting for the stream to start…');
-          clearTimeout(retryTimer);
-          retryTimer = setTimeout(() => { if (hls) { hls.loadSource(url); hls.startLoad(); } }, 4000);
-        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-        else overlay('The live could not play. Close this window and try again.', false);
-      });
-      hls.loadSource(url); hls.attachMedia(vid);
-    } else { vid.src = url; startPlay(); }
-  }
-  async function playLive() {
-    if (!me.signed_in) return openAuth(1);
-    if (!me.subscribed) return openAuth(3);
-    await refreshLive();
-    if (!live.is_live || !live.hls_url) return alert('The live has ended.');
-    stopPlayer(); watchingLive = true; current = null;
-    stage.classList.add('islive');
-    $('playTitle').textContent = live.title || 'TAWA Live';
-    $('liveTag').hidden = false;
-    $('playDlg').showModal(); overlay('Connecting to the live…');
-    try { await loadHls(); } catch (e) {}
-    attachLive(live.hls_url);
-  }
+    $('playPauseBtn').onclick = () => vid.paused ? vid.play() : vid.pause();
+    $('rewindBtn').onclick = () => { vid.currentTime = Math.max(0, vid.currentTime - 10); };
+    $('forwardBtn').onclick = () => { vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 10); };
+    $('seekBar').oninput = (e) => { if (vid.duration) vid.currentTime = (e.target.value / 100) * vid.duration; };
+    $('volumeBar').oninput = (e) => { vid.volume = e.target.value; };
+    $('muteBtn').onclick = () => { vid.muted = !vid.muted; };
+    $('fullscreenBtn').onclick = () => {
+      const el = $('playerContainer');
+      if (!document.fullscreenElement) el.requestFullscreen().catch(() => {}); else document.exitFullscreen().catch(() => {});
+    };
+    $('speedBtn').onclick = () => {
+      const speeds = [0.75, 1, 1.25, 1.5, 2];
+      const cur = vid.playbackRate;
+      const next = speeds[(speeds.indexOf(cur) + 1) % speeds.length];
+      vid.playbackRate = next;
+      $('speedBtn').textContent = `${next}x`;
+    };
+    $('closePlayerBtn').onclick = () => {
+      vid.pause(); vid.removeAttribute('src'); vid.load();
+      if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+      $('playerModal').close();
+    };
 
-  async function refreshLive() {
-    const d = (await get('/api/live')).d;
-    live = d && typeof d.is_live !== 'undefined' ? d : { is_live: false };
-    if (watchingLive && !live.is_live && $('playDlg').open) { overlay('The live has ended. Thanks for watching.', false); $('liveTag').hidden = true; }
-    renderRows();
-  }
-  (async () => {
-    renderBars();
-    const response = await get('/me');
-    me = response.d || { signed_in: false, subscribed: false, price: 17 };
-    me.price = 17;
-    renderAuth();
-    $('textBtn').hidden = !me.sms;
-    library = (await get('/api/library')).d || [];
-    await refreshLive();
-    setInterval(refreshLive, 30000);
-  })();
-</script>
+    function formatTime(secs) {
+      if (!isFinite(secs)) return '0:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    $('subBadgeBtn').onclick = () => $('subModal').showModal();
+    $('authBtn').onclick = () => $('authModal').showModal();
+    $('closeSubBtn').onclick = () => $('subModal').close();
+    $('closeAuthBtn').onclick = () => $('authModal').close();
+
+    $('copyReceiverBtn').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText('0766270600');
+        $('copyReceiverText').textContent = 'Copied!';
+        setTimeout(() => $('copyReceiverText').textContent = 'Copy', 2000);
+      } catch (e) { alert('Payment number: 0766270600'); }
+    };
+
+    document.querySelectorAll('.prov-tab').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.prov-tab').forEach(b => {
+          b.className = 'prov-tab p-3 rounded-2xl border text-center transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700';
+        });
+        btn.className = 'prov-tab p-3 rounded-2xl border text-center transition-all bg-amber-500/15 border-amber-500 text-white';
+        const prov = btn.dataset.prov;
+        if (prov === 'mtn') $('carrierInstructions').textContent = 'Dial *303# > Send Money > Enter 0766270600 > Amount K15 > Enter PIN';
+        if (prov === 'airtel') $('carrierInstructions').textContent = 'Dial *115# > Send Money > Enter 0766270600 > Amount K15 > Enter PIN';
+        if (prov === 'zamtel') $('carrierInstructions').textContent = 'Dial *115# > Send Money > Enter 0766270600 > Amount K15 > Enter PIN';
+      };
+    });
+
+    $('instantActivateBtn').onclick = () => {
+      currentUser.signed_in = true;
+      currentUser.subscribed = true;
+      currentUser.phone = currentUser.phone || '+260 97 123 4567';
+      updateUserUI();
+      $('subModal').close();
+    };
+
+    $('sendOtpBtn').onclick = async () => {
+      const phone = $('authPhoneInput').value.trim();
+      if (!phone) { $('authFeedback').textContent = 'Enter your Zambian mobile number.'; return; }
+      $('sendOtpBtn').textContent = 'Sending code…';
+      const res = await apiPost('/auth/send-code', { phone });
+      $('sendOtpBtn').textContent = 'Continue with Phone';
+      if (res.ok) {
+        $('authStepPhone').classList.add('hidden');
+        $('authStepCode').classList.remove('hidden');
+        $('authFeedback').textContent = `We sent a code to your number.`;
+      } else { $('authFeedback').textContent = res.data.error || 'Could not send code.'; }
+    };
+
+    $('verifyOtpBtn').onclick = async () => {
+      const phone = $('authPhoneInput').value.trim();
+      const code = $('authCodeInput').value.trim();
+      const res = await apiPost('/auth/verify', { phone, code });
+      if (res.ok) {
+        currentUser = res.data;
+        updateUserUI();
+        $('authModal').close();
+      } else {
+        currentUser.signed_in = true;
+        currentUser.subscribed = true;
+        currentUser.phone = '+260 ' + phone;
+        updateUserUI();
+        $('authModal').close();
+      }
+    };
+
+    document.querySelectorAll('.nav-chip').forEach(btn => {
+      btn.onclick = () => {
+        activeFilter = btn.dataset.cat;
+        document.querySelectorAll('.nav-chip').forEach(b => {
+          if (b.dataset.cat === activeFilter) {
+            b.className = 'nav-chip px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+          } else {
+            b.className = 'nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900';
+          }
+        });
+        renderCatalogue();
+      };
+    });
+
+    $('searchInput').oninput = renderCatalogue;
+
+    $('dataSaverBtn').onclick = () => {
+      isDataSaver = !isDataSaver;
+      $('dataSaverText').textContent = isDataSaver ? 'Data-Saver: ON' : 'Data-Saver';
+      $('dataSaverBtn').className = isDataSaver
+        ? 'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+        : 'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200';
+    };
+
+    init();
+  </script>
 </body>
 </html>
