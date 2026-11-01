@@ -69,7 +69,8 @@ def fix_database():
     c = conn.cursor()
     try:
         c.execute("PRAGMA table_info(videos)")
-        columns = [column[1] for column in c.fetchall()]  # Pull out the text names explicitly
+        # Fixed: pull row[1] to get the actual text column name from the tuple format
+        columns = [row[1] for row in c.fetchall()]
         
         if 's3_key' not in columns:
             c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
@@ -83,10 +84,10 @@ def fix_database():
             c.execute("ALTER TABLE videos ADD COLUMN thumb_key TEXT")
             print("✅ Added thumb_key column to existing database")
         else:
-            print("✅ All columns already exist")
+            print("✅ All structural video columns exist")
             
     except Exception as e:
-        print("Error checking/adding columns:", e)
+        print("Database correction exception:", e)
     finally:
         conn.commit()
         conn.close()
@@ -105,7 +106,8 @@ def init_db():
     ''')
     
     c.execute("PRAGMA table_info(videos)")
-    columns = [column[1] for column in c.fetchall()]  # Fixed: tuple mapping to locate text item names
+    # Fixed: pull row[1] to map metadata properly
+    columns = [row[1] for row in c.fetchall()]
     
     if 's3_key' not in columns:
         c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
@@ -119,7 +121,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Execute database checks
+# Execute sequential database schema synchronization
 init_db()
 fix_database()
 
@@ -291,4 +293,3 @@ def trigger_momo_payment():
     }
 
     payload = {
-        "amount": str(PRICE_KWACHA),
