@@ -1,114 +1,96 @@
-def send_sms(phone, text):
-    key = os.environ.get('AT_API_KEY')
-    if not key:
-        if os.environ.get('DEV_MODE'):
-            print(f'DEV SMS to {phone}: {text}')
-            return True
-        return False
-    data = {'username': os.environ.get('AT_USERNAME', 'sandbox'), 'to': phone, 'message': text}
-    if os.environ.get('AT_SENDER'):
-        data['from'] = os.environ['AT_SENDER']
-    try:
-        r = requests.post('https://africastalking.com',
-                          headers={'apiKey': key, 'Accept': 'application/json'},
-                          data=data, timeout=15)
-        return r.status_code in (200, 201)
-    except requests.RequestException as e:
-        print('SMS error:', e)
-        return False
+import os
+import re
+import time
+import uuid
+import hmac
+import hashlib
+import secrets
+import datetime
+import mimetypes
+import base64
+from functools import wraps
 
+import boto3
+import requests
+from flask import Flask, render_template, render_template_string, request, jsonify, Response, session, redirect
+from pgcompat import sqlite3
+from werkzeug.utils import secure_filename
+from botocore.exceptions import ClientError
 
-def current_user():
-    uid = session.get('uid')
-    if not uid:
-        return None
-    conn = db()
-    row = conn.execute('SELECT * FROM users WHERE id = ?', (uid,)).fetchone()
-    conn.close()
-    return row
+app = Flask(__name__)
 
+# S3-compatible object storage (Backblaze B2).
+AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME', 'tawa-streaming')
+AWS_REGION = os.environ.get('AWS_REGION', 'eu-central-003')
+S3_ENDPOINT_URL = (
+    os.environ.get('B2_ENDPOINT_URL')
+    or os.environ.get('AWS_ENDPOINT_URL')
+    or 'https://backblazeb2.com'
+).rstrip('/')
 
-def is_subscribed(user):
-    return bool(user and user['paid_until'] and
-                datetime.datetime.fromisoformat(user['paid_until']) > utcnow())
+s3_client = boto3.client(
+    's3',
+    endpoint_url=S3_ENDPOINT_URL,
+    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+    region_name=AWS_REGION,
+)
 
-
-def grant_days(phone, days):
-    conn = db()
-    conn.execute('INSERT OR IGNORE INTO users (phone) VALUES (?)', (phone,))
-    row = conn.execute('SELECT paid_until FROM users WHERE phone = ?', (phone,)).fetchone()
-    base = utcnow()
-    if row and row['paid_until']:
-        try:
-            base = max(base, datetime.datetime.fromisoformat(row['paid_until']))
-        except Exception:
-            pass
-    new_until = (base + datetime.timedelta(days=days)).isoformat()
-    conn.execute('UPDATE users SET paid_until = ? WHERE phone = ?', (new_until, phone))
-    conn.commit()
-    conn.close()
-
+# MTN MoMo Credentials (Safely pulls from Render Environment Variables)
+MOMO_PRIMARY_KEY = os.environ.get('MOMO_PRIMARY_KEY')
+MOMO_USER_UUID = os.environ.get('MOMO_USER_UUID')
+MOMO_API_KEY = os.environ.get('MOMO_API_KEY')
 
 # ---------------------------------------------------------------------------
-# MTN Mobile Money Engine Integration
+# Admin protection
 # ---------------------------------------------------------------------------
-def get_momo_access_token():
-    """Generates an API bearer token using standard Basic authentication configuration"""
-    url = "https://mtn.com"
-    auth_str = f"{MOMO_USER_UUID}:{MOMO_API_KEY}"
-    b64_auth = base64.b64encode(auth_str.encode()).decode()
+def requires_admin(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        password = os.environ.get('ADMIN_PASSWORD')
+        if not password:
+            return Response(
+                'Admin is locked. Set the ADMIN_PASSWORD environment variable to enable it.',
+                503
+            )
+        auth = request.authorization
+        if not auth or not hmac.compare_digest(auth.password or '', password):
+            return Response(
+                'Login required.', 401,
+                {'WWW-Authenticate': 'Basic realm="TAWA Admin"'}
+            )
+        return view(*args, **kwargs)
+    return wrapped
 
-    headers = {
-        "Ocp-Apim-Subscription-Key": MOMO_PRIMARY_KEY,
-        "Authorization": f"Basic {b64_auth}"
-    }
+
+def fix_database():
+    """Add missing columns to existing database safely checking column tuple index"""
+    conn = sqlite3.connect('tawa.db')
+    c = conn.cursor()
     try:
-        r = requests.post(url, headers=headers, timeout=15)
-        if r.status_code == 200:
-            return r.json().get("access_token")
-    except requests.RequestException as e:
-        print("MoMo Authentication Exception:", e)
-    return None
+        c.execute("PRAGMA table_info(videos)")
+        columns = [row[1] for row in c.fetchall()]
+        
+        if 's3_key' not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
+            print("✅ Added missing s3_key column to existing database")
+        
+        if 'category' not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN category TEXT DEFAULT 'General'")
+            print("✅ Added category column to existing database")
 
+        if 'thumb_key' not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN thumb_key TEXT")
+            print("✅ Added thumb_key column to existing database")
+        else:
+            print("✅ All columns already exist")
+            
+    except Exception as e:
+        print("Error checking/adding columns:", e)
+    finally:
+        conn.commit()
+        conn.close()
+    
 
-@app.route('/api/pay/momo', methods=['POST'])
-def trigger_momo_payment():
-    """Initiates an asynchronous requesttopay collect prompt to user phone"""
-    user = current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized session'}), 401
-
-    phone = user['phone']
-    clean_phone = re.sub(r'\D', '', phone)
-
-    token = get_momo_access_token()
-    if not token:
-        return jsonify({'error': 'Internal authentication connection error'}), 500
-
-    url = "https://mtn.com"
-    transaction_uuid = str(uuid.uuid4())
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "X-Reference-Id": transaction_uuid,
-        "X-Target-Environment": "sandbox",
-        "Ocp-Apim-Subscription-Key": MOMO_PRIMARY_KEY,
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "amount": str(PRICE_KWACHA),
-        "currency": "EUR",
-        "externalId": str(int(time.time())),
-        "payer": {
-            "partyIdType": "MSISDN",
-            "partyId": clean_phone
-        },
-        }
-    }
-
-    # The payment request is intentionally not sent until the correct MTN
-    # Zambia API base URL and credentials are configured in Render.
-    return jsonify({
-        'error': 'MTN payment setup is incomplete. Please try again later.'
-    }), 503
+# Initialize database
+def init_db():
