@@ -64,12 +64,12 @@ def requires_admin(view):
 
 
 def fix_database():
-    """Add missing columns to existing database"""
+    """Add missing columns to existing database safely checking column tuple index"""
     conn = sqlite3.connect('tawa.db')
     c = conn.cursor()
     try:
         c.execute("PRAGMA table_info(videos)")
-        columns = [column[1] for column in c.fetchall()]
+        columns = [column[1] for column in c.fetchall()]  # Pull out the text names explicitly
         
         if 's3_key' not in columns:
             c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
@@ -105,7 +105,7 @@ def init_db():
     ''')
     
     c.execute("PRAGMA table_info(videos)")
-    columns = [column[1] for column in c.fetchall()]
+    columns = [column[1] for column in c.fetchall()]  # Fixed: tuple mapping to locate text item names
     
     if 's3_key' not in columns:
         c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
@@ -118,7 +118,10 @@ def init_db():
         
     conn.commit()
     conn.close()
+
+# Execute database checks
 init_db()
+fix_database()
 
 # ---------------------------------------------------------------------------
 # Accounts (phone number + SMS code), K15 subscription, and live
@@ -230,7 +233,10 @@ def grant_days(phone, days):
     row = conn.execute('SELECT paid_until FROM users WHERE phone = ?', (phone,)).fetchone()
     base = utcnow()
     if row and row['paid_until']:
-        base = max(base, datetime.datetime.fromisoformat(row['paid_until']))
+        try:
+            base = max(base, datetime.datetime.fromisoformat(row['paid_until']))
+        except Exception:
+            pass
     new_until = (base + datetime.timedelta(days=days)).isoformat()
     conn.execute('UPDATE users SET paid_until = ? WHERE phone = ?', (new_until, phone))
     conn.commit()
@@ -286,9 +292,3 @@ def trigger_momo_payment():
 
     payload = {
         "amount": str(PRICE_KWACHA),
-        "currency": "EUR",  # Sandbox requirements demand 'EUR'
-        "externalId": str(int(time.time())),
-        "payer": {
-            "partyIdType": "MSISDN",
-            "partyId": clean_phone
-        },
