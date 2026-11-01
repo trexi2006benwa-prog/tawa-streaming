@@ -36,7 +36,7 @@ s3_client = boto3.client(
     region_name=AWS_REGION,
 )
 
-# MTN MoMo Credentials (Safely configured to pull from Render Variables)
+# MTN MoMo Credentials (Safely pulls from Render Environment Variables)
 MOMO_PRIMARY_KEY = os.environ.get('MOMO_PRIMARY_KEY', '6f1febfcbb654d3a88fba810d1fd1deb')
 MOMO_USER_UUID = os.environ.get('MOMO_USER_UUID', 'a9e2b104-c518-47bc-ad74-88899dfc4491')
 MOMO_API_KEY = os.environ.get('MOMO_API_KEY', '2514135a636d47309eadb7284eb5ac10')
@@ -69,7 +69,6 @@ def fix_database():
     c = conn.cursor()
     try:
         c.execute("PRAGMA table_info(videos)")
-        # Fixed: pull row[1] to get the actual text column name from the tuple format
         columns = [row[1] for row in c.fetchall()]
         
         if 's3_key' not in columns:
@@ -84,10 +83,10 @@ def fix_database():
             c.execute("ALTER TABLE videos ADD COLUMN thumb_key TEXT")
             print("✅ Added thumb_key column to existing database")
         else:
-            print("✅ All structural video columns exist")
+            print("✅ All columns already exist")
             
     except Exception as e:
-        print("Database correction exception:", e)
+        print("Error checking/adding columns:", e)
     finally:
         conn.commit()
         conn.close()
@@ -106,7 +105,6 @@ def init_db():
     ''')
     
     c.execute("PRAGMA table_info(videos)")
-    # Fixed: pull row[1] to map metadata properly
     columns = [row[1] for row in c.fetchall()]
     
     if 's3_key' not in columns:
@@ -121,7 +119,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Execute sequential database schema synchronization
 init_db()
 fix_database()
 
@@ -173,6 +170,7 @@ def init_accounts_db():
     ''')
     conn.commit()
     conn.close()
+
 init_accounts_db()
 
 
@@ -275,7 +273,7 @@ def trigger_momo_payment():
         return jsonify({'error': 'Unauthorized session'}), 401
 
     phone = user['phone']
-    clean_phone = re.sub(r'\D', '', phone) # strips symbols to standard format (ex: 260961234567)
+    clean_phone = re.sub(r'\D', '', phone)
 
     token = get_momo_access_token()
     if not token:
@@ -293,3 +291,10 @@ def trigger_momo_payment():
     }
 
     payload = {
+        "amount": str(PRICE_KWACHA),
+        "currency": "EUR",
+        "externalId": str(int(time.time())),
+        "payer": {
+            "partyIdType": "MSISDN",
+            "partyId": clean_phone
+        },
