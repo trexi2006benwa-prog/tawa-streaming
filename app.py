@@ -7,7 +7,6 @@ import hashlib
 import secrets
 import datetime
 import mimetypes
-import base64
 from functools import wraps
 
 import boto3
@@ -20,14 +19,17 @@ from botocore.exceptions import ClientError
 app = Flask(__name__)
 
 # S3-compatible object storage (Backblaze B2).
+# Set these in Render > Environment. Keep the existing AWS_* key names if
+# those are the names already used by your deployment.
 AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME', 'tawa-streaming')
 AWS_REGION = os.environ.get('AWS_REGION', 'eu-central-003')
 S3_ENDPOINT_URL = (
     os.environ.get('B2_ENDPOINT_URL')
     or os.environ.get('AWS_ENDPOINT_URL')
-    or 'https://backblazeb2.com'
+    or 'https://s3.eu-central-003.backblazeb2.com'
 ).rstrip('/')
 
+# Boto3 must be pointed at the Backblaze endpoint; otherwise it calls AWS S3.
 s3_client = boto3.client(
     's3',
     endpoint_url=S3_ENDPOINT_URL,
@@ -36,13 +38,9 @@ s3_client = boto3.client(
     region_name=AWS_REGION,
 )
 
-# MTN MoMo Credentials (Safely pulls from Render Environment Variables)
-MOMO_PRIMARY_KEY = os.environ.get('MOMO_PRIMARY_KEY')
-MOMO_USER_UUID = os.environ.get('MOMO_USER_UUID')
-MOMO_API_KEY = os.environ.get('MOMO_API_KEY')
-
 # ---------------------------------------------------------------------------
-# Admin protection
+# Admin protection (set ADMIN_PASSWORD in your Render environment variables)
+# Any username works; only the password is checked.
 # ---------------------------------------------------------------------------
 def requires_admin(view):
     @wraps(view)
@@ -64,12 +62,13 @@ def requires_admin(view):
 
 
 def fix_database():
-    """Add missing columns to existing database safely checking column tuple index"""
+    """Add missing columns to existing database"""
     conn = sqlite3.connect('tawa.db')
     c = conn.cursor()
     try:
+        # Check if s3_key column exists
         c.execute("PRAGMA table_info(videos)")
-        columns = [row[1] for row in c.fetchall()]
+        columns = [column[1] for column in c.fetchall()]
         
         if 's3_key' not in columns:
             c.execute("ALTER TABLE videos ADD COLUMN s3_key TEXT")
@@ -94,3 +93,4 @@ def fix_database():
 
 # Initialize database
 def init_db():
+    conn = sqlite3.connect('tawa.db')
