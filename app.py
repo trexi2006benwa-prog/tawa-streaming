@@ -315,13 +315,146 @@ def me():
     return jsonify(me_payload(current_user()))
 
 
-def charge_mobile_money(phone, amount, reference):
-    """TODO: connect your mobile money provider here (Lipila, DPO, MTN MoMo API, Airtel Money API...).
+# ===========================================================================
+# MTN MoMo Collections (Request to Pay)
+# PASTE THIS BLOCK IN PLACE OF: charge_mobile_money, pay_start and pay_webhook
+# (everything from `def charge_mobile_money` down to the end of `pay_webhook`).
+# ===========================================================================
+import base64
+import threading
 
-    It must send a payment prompt for `amount` kwacha to `phone`, using `reference` as the
-    payment's ID, and set the provider's callback URL to POST /pay/webhook.
-    Until this is filled in, subscribers are activated with /admin/grant."""
-    raise NotImplementedError
+# Credentials come from Render > Environment, never from the code itself.
+MTN_PRIMARY_KEY = os.environ.get('MTN_PRIMARY_KEY')      # Ocp-Apim-Subscription-Key
+MTN_API_USER_ID = os.environ.get('MTN_API_USER_ID')      # the API user (UUID)
+MTN_API_KEY = os.environ.get('MTN_API_KEY')              # the API key made for that user
+
+# 'sandbox' while testing, 'mtnzambia' once MTN has approved you for production.
+MTN_ENV = os.environ.get('MTN_ENVIRONMENT', 'sandbox')
+MTN_BASE_URL = (os.environ.get('MTN_BASE_URL') or (
+    'https://sandbox.momodeveloper.mtn.com' if MTN_ENV == 'sandbox'
+    else 'https://proxy.momoapi.mtn.com')).rstrip('/')
+# The sandbox only accepts EUR. Production in Zambia uses ZMW.
+MTN_CURRENCY = os.environ.get('MTN_CURRENCY') or ('EUR' if MTN_ENV == 'sandbox' else 'ZMW')
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'https://tawa-streaming.onrender.com').rstrip('/')
+
+_mtn_token_cache = {'value': None, 'expires': 0.0}
+_mtn_lock = threading.Lock()
+
+
+def mtn_configured():
+    return bool(MTN_PRIMARY_KEY and MTN_API_USER_ID and MTN_API_KEY)
+
+
+def mtn_token():
+    """Get (and cache) the bearer token. MTN tokens last about an hour."""
+    with _mtn_lock:
+        if _mtn_token_cache['value'] and time.time() < _mtn_token_cache['expires'] - 60:
+            return _mtn_token_cache['value']
+        basic = base64.b64encode(f'{MTN_API_USER_ID}:{MTN_API_KEY}'.encode()).decode()
+        r = requests.post(
+            f'{MTN_BASE_URL}/collection/token/',
+            headers={'Authorization': f'Basic {basic}',
+                     'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY},
+            timeout=20)
+        r.raise_for_status()
+        data = r.json()
+        _mtn_token_cache['value'] = data['access_token']
+        _mtn_token_cache['expires'] = time.time() + int(data.get('expires_in', 3600))
+        return _mtn_token_cache['value']
+
+
+def _mtn_headers(extra=None):
+    h = {'Authorization': f'Bearer {mtn_token()}',
+         'X-Target-Environment': MTN_ENV,
+         'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY}
+    if extra:
+        h.update(extra)
+    return h
+
+
+def charge_mobile_money(phone, amount, reference):
+    """Send an MTN MoMo payment prompt to `phone` for `amount`.
+    `reference` must be a UUID: it is used as MTN's X-Reference-Id."""
+    if not mtn_configured():
+        raise NotImplementedError
+    msisdn = phone.lstrip('+')  # MTN wants 260971234567, no plus sign
+    extra = {'X-Reference-Id': reference, 'Content-Type': 'application/json'}
+    if PUBLIC_BASE_URL.startswith('https://'):
+        extra['X-Callback-Url'] = f'{PUBLIC_BASE_URL}/pay/webhook'
+    r = requests.post(
+        f'{MTN_BASE_URL}/collection/v1_0/requesttopay',
+        headers=_mtn_headers(extra),
+        json={'amount': str(amount),
+              'currency': MTN_CURRENCY,
+              'externalId': reference,
+              'payer': {'partyIdType': 'MSISDN', 'partyId': msisdn},
+              'payerMessage': 'TAWA 30 day subscription',
+              'payeeNote': 'TAWA subscription'},
+        timeout=20)
+    if r.status_code != 202:  # 202 Accepted = the prompt was sent
+        raise RuntimeError(f'MTN requesttopay failed: {r.status_code} {r.text[:300]}')
+
+
+def mtn_payment_info(reference):
+    """Ask MTN directly what happened to a payment. Returns MTN's JSON or None."""
+    try:
+        r = requests.get(
+            f'{MTN_BASE_URL}/collection/v1_0/requesttopay/{reference}',
+            headers=_mtn_headers(), timeout=20)
+        if r.status_code == 200:
+            return r.json()
+        print('MTN status error:', r.status_code, r.text[:200])
+    except (requests.RequestException, KeyError, ValueError) as e:
+        print('MTN status error:', e)
+    return None
+
+
+def settle_payment(reference):
+    """Check a payment with MTN and, if it succeeded, grant access exactly once.
+    Returns 'paid', 'failed', 'pending' or None (unknown reference).
+    Never trusts what a caller says: only MTN's own answer counts."""
+    conn = db()
+    pay = conn.execute('SELECT * FROM payments WHERE reference = ?', (reference,)).fetchone()
+    conn.close()
+    if not pay:
+        return None
+    if pay['status'] == 'paid':
+        return 'paid'
+    if pay['status'] == 'failed':
+        return 'failed'
+
+    info = mtn_payment_info(reference)
+    if not info:
+        return 'pending'
+    status = str(info.get('status', '')).upper()
+
+    if status == 'SUCCESSFUL':
+        try:
+            if float(info.get('amount', 0)) != float(pay['amount']):
+                print('MTN amount mismatch for', reference, info.get('amount'))
+                return 'pending'
+        except (TypeError, ValueError):
+            return 'pending'
+        conn = db()
+        done = conn.execute("UPDATE payments SET status = 'paid' WHERE reference = ? AND status = 'pending'",
+                            (reference,)).rowcount
+        conn.commit()
+        conn.close()
+        if done:  # only the first check (callback or poll) grants access
+            grant_days(pay['phone'], SUBSCRIPTION_DAYS)
+            # Commission only after a verified successful payment.
+            record_affiliate_payment(pay['phone'], pay['amount'], pay['reference'])
+        return 'paid'
+
+    if status == 'FAILED':
+        conn = db()
+        conn.execute("UPDATE payments SET status = 'failed' WHERE reference = ? AND status = 'pending'",
+                     (reference,))
+        conn.commit()
+        conn.close()
+        return 'failed'
+
+    return 'pending'
 
 
 @app.route('/pay/start', methods=['POST'])
@@ -329,47 +462,62 @@ def pay_start():
     user = current_user()
     if not user:
         return jsonify({'error': 'Sign in first.'}), 401
-    reference = 'TAWA-' + uuid.uuid4().hex[:12]
+    body = json_body()
+    # Optional: pay from a different MTN number than the account number.
+    payer = normalize_phone(body.get('phone')) if body.get('phone') else user['phone']
+    if not payer:
+        return jsonify({'error': 'Enter a valid MTN number, like 096 123 4567.'}), 400
+    reference = str(uuid.uuid4())  # MTN requires a UUID
     conn = db()
     conn.execute('INSERT INTO payments (reference, phone, amount) VALUES (?, ?, ?)',
                  (reference, user['phone'], PRICE_KWACHA))
     conn.commit()
     conn.close()
     try:
-        charge_mobile_money(user['phone'], PRICE_KWACHA, reference)
+        charge_mobile_money(payer, PRICE_KWACHA, reference)
     except NotImplementedError:
         return jsonify({'error': 'Payments are not switched on yet. Please try again soon.'}), 503
     except Exception as e:
         print('Payment error:', e)
-        return jsonify({'error': 'The payment could not start. Try again.'}), 502
-    return jsonify({'ok': True, 'reference': reference})
+        conn = db()
+        conn.execute("UPDATE payments SET status = 'failed' WHERE reference = ?", (reference,))
+        conn.commit()
+        conn.close()
+        return jsonify({'error': 'The payment could not start. Check the number and try again.'}), 502
+    return jsonify({'ok': True, 'reference': reference,
+                    'message': 'Check your phone and enter your MTN MoMo PIN to approve K%d.' % PRICE_KWACHA})
 
 
-@app.route('/pay/webhook', methods=['POST'])
-def pay_webhook():
-    """Called by your payment provider. Check their docs: many sign the request, so swap the
-    shared-secret check below for their signature check."""
-    secret = os.environ.get('PAYMENT_WEBHOOK_SECRET')
-    if not secret:
-        return jsonify({'error': 'Webhook not configured'}), 503
-    if not hmac.compare_digest(request.headers.get('X-Webhook-Secret', ''), secret):
-        return jsonify({'error': 'Forbidden'}), 403
-    body = json_body()
-    if str(body.get('status', '')).lower() != 'success':
-        return jsonify({'ok': True})
+@app.route('/pay/status/<reference>')
+def pay_status(reference):
+    """The website polls this every few seconds after /pay/start."""
+    user = current_user()
+    if not user:
+        return jsonify({'error': 'Sign in first.'}), 401
     conn = db()
-    pay = conn.execute('SELECT * FROM payments WHERE reference = ?', (body.get('reference'),)).fetchone()
-    done = conn.execute("UPDATE payments SET status = 'paid' WHERE reference = ? AND status = 'pending'",
-                        (body.get('reference'),)).rowcount
-    conn.commit()
+    pay = conn.execute('SELECT phone FROM payments WHERE reference = ?', (reference,)).fetchone()
     conn.close()
-    if pay and done:  # only the first callback grants access
-        grant_days(pay['phone'], SUBSCRIPTION_DAYS)
-        # Commission is recorded only after the verified payment callback succeeds.
-        # Manual/free admin grants do not create affiliate commissions.
-        record_affiliate_payment(pay['phone'], pay['amount'], pay['reference'])
-    return jsonify({'ok': True})
+    if not pay or pay['phone'] != user['phone']:
+        return jsonify({'error': 'Payment not found.'}), 404
+    status = settle_payment(reference)
+    return jsonify({'status': status, 'me': me_payload(current_user())})
 
+
+@app.route('/pay/webhook', methods=['POST', 'PUT'])
+def pay_webhook():
+    """MTN calls this when a payment finishes. MTN's callback is not signed, so we ignore
+    its claims and ask MTN's API for the real result instead."""
+    body = json_body()
+    reference = body.get('externalId') or body.get('referenceId')
+    if reference:
+        try:
+            settle_payment(str(reference))
+        except Exception as e:
+            print('Webhook error:', e)
+    return jsonify({'ok': True})
+# ===========================================================================
+# END OF MTN BLOCK
+# ===========================================================================
 
 @app.route('/api/library')
 def api_library():
