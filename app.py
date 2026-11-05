@@ -868,15 +868,15 @@ def admin_panel():
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0F172A;
-    --panel: #1E293B;
-    --panel-2: #172033;
-    --line: #2B3A52;
-    --text: #F1F5F9;
-    --muted: #94A3B8;
-    --sky: #38BDF8;
-    --sky-deep: #0EA5E9;
-    --ok: #34D399;
+    --bg: #0B1F1A;
+    --panel: #12312A;
+    --panel-2: #0F2A24;
+    --line: #1E463C;
+    --text: #F3ECDC;
+    --muted: #9DB5AB;
+    --sky: #E8873A;
+    --sky-deep: #C86F25;
+    --ok: #4CC9A0;
     --warn: #F59E0B;
     --bad: #F87171;
     --sans: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
@@ -900,7 +900,7 @@ def admin_panel():
   /* ---------- Top bar ---------- */
   .topbar {
     position: sticky; top: 0; z-index: 20;
-    background: rgba(15, 23, 42, 0.88);
+    background: rgba(11, 31, 26, 0.88);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
   }
@@ -913,7 +913,7 @@ def admin_panel():
     width: 34px; height: 34px; border-radius: 10px;
     background: linear-gradient(140deg, var(--sky), #0369A1);
     display: grid; place-items: center;
-    box-shadow: 0 0 22px rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 22px rgba(232, 135, 58, 0.35);
   }
   .brand-mark svg { width: 14px; height: 14px; margin-left: 2px; fill: #0F172A; }
   .brand-name { font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em; }
@@ -923,7 +923,7 @@ def admin_panel():
     padding: 0.45rem 0.9rem; border: 1px solid var(--line); border-radius: 999px;
     transition: border-color .2s, background .2s;
   }
-  .site-link:hover { border-color: var(--sky); background: rgba(56, 189, 248, 0.08); }
+  .site-link:hover { border-color: var(--sky); background: rgba(232, 135, 58, 0.08); }
 
   /* ---------- Layout ---------- */
   .wrap { max-width: 1160px; margin: 0 auto; padding: 2.2rem 1.5rem 4rem; }
@@ -960,7 +960,7 @@ def admin_panel():
     background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
     transition: border-color .2s, box-shadow .2s;
   }
-  .input:focus, .select:focus { outline: none; border-color: var(--sky); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18); }
+  .input:focus, .select:focus { outline: none; border-color: var(--sky); box-shadow: 0 0 0 3px rgba(232, 135, 58, 0.18); }
   .select {
     appearance: none; cursor: pointer;
     background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
@@ -973,7 +973,7 @@ def admin_panel():
     position: relative; aspect-ratio: 16 / 9; min-height: 190px;
     border-radius: 14px; border: 1px solid var(--line);
     background:
-      radial-gradient(120% 90% at 50% 0%, rgba(56, 189, 248, 0.16), transparent 60%),
+      radial-gradient(120% 90% at 50% 0%, rgba(232, 135, 58, 0.16), transparent 60%),
       var(--panel-2);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 0.5rem; text-align: center; padding: 1rem; cursor: pointer; overflow: hidden;
@@ -982,10 +982,10 @@ def admin_panel():
   .drop::after {
     content: ''; position: absolute; left: 12%; right: 12%; bottom: 0; height: 3px;
     background: var(--sky); border-radius: 3px 3px 0 0; opacity: .5;
-    box-shadow: 0 0 24px 4px rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 24px 4px rgba(232, 135, 58, 0.5);
     transition: opacity .25s, left .25s, right .25s;
   }
-  .drop:hover, .drop.drag { border-color: var(--sky); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12); }
+  .drop:hover, .drop.drag { border-color: var(--sky); box-shadow: 0 0 0 4px rgba(232, 135, 58, 0.12); }
   .drop.drag::after, .drop.has-file::after { opacity: 1; left: 0; right: 0; }
   .drop-icon { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--sky); display: grid; place-items: center; }
   .drop-icon svg { width: 18px; height: 18px; fill: var(--sky); margin-left: 2px; }
@@ -1000,11 +1000,11 @@ def admin_panel():
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-    font: inherit; font-weight: 700; color: #06243A; cursor: pointer;
+    font: inherit; font-weight: 700; color: #1A0E04; cursor: pointer;
     background: var(--sky); border: none; border-radius: 10px; padding: 0.9rem 1.6rem;
     transition: background .2s, transform .1s, opacity .2s;
   }
-  .btn:hover { background: #7DD3FC; }
+  .btn:hover { background: #F2A65A; }
   .btn:active { transform: translateY(1px); }
   .btn:disabled { opacity: .55; cursor: not-allowed; }
   .form-actions { margin-top: 1.4rem; display: flex; justify-content: flex-end; }
@@ -1042,13 +1042,13 @@ def admin_panel():
   th { text-align: left; font-weight: 500; font-size: 0.88rem; color: var(--muted); padding: 0.85rem 1.1rem; background: var(--panel-2); border-bottom: 1px solid var(--line); }
   td { padding: 0.95rem 1.1rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: rgba(56, 189, 248, 0.04); }
+  tbody tr:hover td { background: rgba(232, 135, 58, 0.04); }
   th.right, td.right { text-align: right; }
   .title-cell { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
   .thumb {
     flex: none; width: 56px; aspect-ratio: 16 / 9; border-radius: 6px;
     display: grid; place-items: center; font-weight: 800; font-size: 0.95rem; color: var(--sky);
-    background: linear-gradient(140deg, #243247, #172033); border: 1px solid var(--line);
+    background: linear-gradient(140deg, #17533F, #0B1F1A); border: 1px solid var(--line);
   }
   .thumb { overflow: hidden; }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1057,22 +1057,22 @@ def admin_panel():
   .title-date { color: var(--muted); font-size: 0.82rem; font-weight: 400; display: block; }
   .badge {
     display: inline-block; padding: 0.28rem 0.7rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500;
-    background: #0B1220; border: 1px solid var(--line); color: var(--muted);
+    background: #0B1F1A; border: 1px solid var(--line); color: var(--muted);
   }
-  .badge[data-tint="trending"] { color: #7DD3FC; border-color: rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.08); }
+  .badge[data-tint="trending"] { color: #F2A65A; border-color: rgba(232, 135, 58, 0.45); background: rgba(232, 135, 58, 0.08); }
   .badge[data-tint="movies"]   { color: #C4B5FD; border-color: rgba(167, 139, 250, 0.45); background: rgba(167, 139, 250, 0.08); }
   .badge[data-tint="shows"]    { color: #5EEAD4; border-color: rgba(45, 212, 191, 0.45); background: rgba(45, 212, 191, 0.08); }
   .badge[data-tint="continue"] { color: #FCD34D; border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.08); }
   .filename { font-family: var(--mono); font-size: 0.85rem; color: #CBD5E1; word-break: break-all; }
   .test-link {
     display: inline-block; color: var(--sky); text-decoration: none; font-weight: 700; font-size: 0.92rem;
-    padding: 0.4rem 0.85rem; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 8px; white-space: nowrap;
+    padding: 0.4rem 0.85rem; border: 1px solid rgba(232, 135, 58, 0.4); border-radius: 8px; white-space: nowrap;
     transition: background .2s;
   }
-  .test-link:hover { background: rgba(56, 189, 248, 0.12); }
+  .test-link:hover { background: rgba(232, 135, 58, 0.12); }
   .muted-cell { color: var(--muted); font-size: 0.9rem; }
 
-  .skeleton td > div { height: 14px; border-radius: 6px; background: linear-gradient(90deg, #243247 25%, #2D3E58 50%, #243247 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+  .skeleton td > div { height: 14px; border-radius: 6px; background: linear-gradient(90deg, #12312A 25%, #1B4A3A 50%, #12312A 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
   @keyframes shimmer { to { background-position: -200% 0; } }
   .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
   .empty strong { display: block; color: var(--text); font-size: 1.1rem; margin-bottom: 0.3rem; }
@@ -1101,6 +1101,17 @@ def admin_panel():
     .lib-tools { width: 100%; }
     .lib-tools .input { flex: 1; width: auto; }
   }
+  .brand-mark { background: none; box-shadow: none; }
+  .brand-mark svg { width: 36px; height: 36px; margin: 0; }
+  .page-head { position: relative; overflow: hidden; padding: 2rem; border-radius: 22px; border: 1px solid var(--line);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg fill='none' stroke='%23F3ECDC' stroke-opacity='.07' stroke-width='2'%3E%3Ccircle cx='36' cy='36' r='10'/%3E%3Ccircle cx='36' cy='36' r='22'/%3E%3Cpath d='M0 0L72 72M72 0L0 72' stroke-opacity='.04'/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(135deg, #17533F, var(--bg) 70%); }
+  .stat { position: relative; overflow: hidden; }
+  .stat::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--sky); }
+  .stat-value { color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .cchip { font: inherit; font-weight: 600; font-size: .9rem; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: .5rem 1rem; cursor: pointer; transition: border-color .2s, color .2s; }
+  .cchip:hover { border-color: var(--sky); color: var(--text); }
+  .cchip.on { background: var(--sky); border-color: var(--sky); color: #1A0E04; }
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
@@ -1111,7 +1122,7 @@ def admin_panel():
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/admin" aria-label="TAWA Admin home">
-      <span class="brand-mark"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z"/></svg></span>
+      <span class="brand-mark"><svg viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1B5E4A"/><stop offset="1" stop-color="#0B1F1A"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#lg)"/><rect x="10" y="13" width="44" height="9" rx="4.5" fill="#F3ECDC"/><rect x="27.5" y="13" width="9" height="38" rx="4.5" fill="#F3ECDC"/><path d="M42 30v16l10-8z" fill="#E8873A" stroke="#E8873A" stroke-width="3" stroke-linejoin="round"/></svg></span>
       <span class="brand-name">TAWA<span>Admin</span></span>
     </a>
     <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:flex-end">
@@ -1123,37 +1134,10 @@ def admin_panel():
 
 <main class="wrap">
   <div class="page-head">
-    <h1>Your catalogue</h1>
+    <h1 id="greet">Your catalogue</h1>
     <p>Add new titles to the cloud and check that every one of them streams before your viewers find it.</p>
   </div>
 
-  <section class="card" aria-labelledby="affiliateTitle" id="affiliateManagement">
-    <h2 class="card-title" id="affiliateTitle">Affiliate management</h2>
-    <p class="card-sub" id="affRule">Each affiliate earns 30% of a customer's first verified subscription payment only. Renewals and free access earn no commission.</p>
-    <div id="affMsg" class="aff-message" role="status" aria-live="polite"></div>
-
-    <div class="aff-form-grid">
-      <div class="field"><label for="affName">Affiliate name</label><input class="input" id="affName" placeholder="e.g. John Banda" maxlength="60"></div>
-      <div class="field"><label for="affPhone">Phone for payouts</label><input class="input" id="affPhone" placeholder="097 123 4567"></div>
-      <div class="field"><label for="affCode">Referral code (optional)</label><input class="input" id="affCode" placeholder="Auto-generate"></div>
-      <div class="field aff-add-wrap"><label>&nbsp;</label><button class="btn" type="button" id="affAdd">Add affiliate</button></div>
-    </div>
-
-    <h3 class="aff-subhead">Affiliates and referrals</h3>
-    <div class="table-scroll"><table class="aff-table"><thead><tr><th>Name / phone</th><th>Referral link</th><th>Clicks</th><th>Sign-ups</th><th>Paying</th><th>Owed</th><th>Paid</th><th>Actions</th></tr></thead><tbody id="affRows"><tr><td colspan="8" class="muted-cell">Loading affiliates…</td></tr></tbody></table></div>
-
-    <h3 class="aff-subhead">Assign a customer manually</h3>
-    <p class="card-sub">Use this if a customer joined through an affiliate but the referral link was not saved. Assign before the customer pays.</p>
-    <div class="aff-form-grid aff-assign-grid">
-      <div class="field"><label for="affCustomerPhone">Customer phone</label><input class="input" id="affCustomerPhone" placeholder="097 123 4567"></div>
-      <div class="field"><label for="affAssignCode">Affiliate code</label><input class="input" id="affAssignCode" placeholder="JOHN42"></div>
-      <div class="field aff-add-wrap"><label>&nbsp;</label><button class="btn" type="button" id="affAssign">Assign referral</button></div>
-    </div>
-
-    <h3 class="aff-subhead">Recent commissions</h3>
-    <div class="table-scroll"><table class="aff-table"><thead><tr><th>Date</th><th>Code</th><th>Customer phone</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="affCommissionRows"><tr><td colspan="6" class="muted-cell">Loading commissions…</td></tr></tbody></table></div>
-    <p class="card-sub" style="margin-top:1rem;margin-bottom:0">Only verified payment callbacks create commissions. Giving someone free access with the admin tools does not earn a commission. Mark a payout as paid only after you have sent the money.</p>
-  </section>
 
 
   <section class="stats" aria-label="Platform stats">
@@ -1199,17 +1183,9 @@ def admin_panel():
             <input class="input" type="text" id="videoTitle" placeholder="e.g. Copperbelt Nights, Episode 1" maxlength="120" required>
           </div>
           <div class="field">
-            <label for="videoCategory">Home page row</label>
-            <select class="select" id="videoCategory" required>
-              <option value="">Choose a row</option>
-              <option value="Trending Now">Trending Now</option>
-              <option value="Popular Movies">Movies</option>
-              <option value="TV Shows">TV Shows</option>
-              <option value="Series">Series</option>
-              <option value="Documentaries">Documentaries</option>
-              <option value="Gaming">Gaming</option>
-              <option value="Podcasts">Podcasts</option>
-            </select>
+            <label>Where should it appear?</label>
+            <div class="chips" id="catChips"><button type="button" class="cchip" data-v="Trending Now">Trending Now</button><button type="button" class="cchip" data-v="Popular Movies">Movies</button><button type="button" class="cchip" data-v="TV Shows">TV Shows</button><button type="button" class="cchip" data-v="Series">Series</button><button type="button" class="cchip" data-v="Documentaries">Documentaries</button><button type="button" class="cchip" data-v="Gaming">Gaming</button><button type="button" class="cchip" data-v="Podcasts">Podcasts</button></div>
+            <select id="videoCategory" required style="display:none"><option value="">Choose a row</option><option value="Trending Now">Trending Now</option><option value="Popular Movies">Movies</option><option value="TV Shows">TV Shows</option><option value="Series">Series</option><option value="Documentaries">Documentaries</option><option value="Gaming">Gaming</option><option value="Podcasts">Podcasts</option></select>
           </div>
         </div>
 
@@ -1289,6 +1265,33 @@ def admin_panel():
         <tbody id="libBody"></tbody>
       </table>
     </div>
+  </section>
+  <section class="card" aria-labelledby="affiliateTitle" id="affiliateManagement">
+    <h2 class="card-title" id="affiliateTitle">Affiliate management</h2>
+    <p class="card-sub" id="affRule">Each affiliate earns 30% of a customer's first verified subscription payment only. Renewals and free access earn no commission.</p>
+    <div id="affMsg" class="aff-message" role="status" aria-live="polite"></div>
+
+    <div class="aff-form-grid">
+      <div class="field"><label for="affName">Affiliate name</label><input class="input" id="affName" placeholder="e.g. John Banda" maxlength="60"></div>
+      <div class="field"><label for="affPhone">Phone for payouts</label><input class="input" id="affPhone" placeholder="097 123 4567"></div>
+      <div class="field"><label for="affCode">Referral code (optional)</label><input class="input" id="affCode" placeholder="Auto-generate"></div>
+      <div class="field aff-add-wrap"><label>&nbsp;</label><button class="btn" type="button" id="affAdd">Add affiliate</button></div>
+    </div>
+
+    <h3 class="aff-subhead">Affiliates and referrals</h3>
+    <div class="table-scroll"><table class="aff-table"><thead><tr><th>Name / phone</th><th>Referral link</th><th>Clicks</th><th>Sign-ups</th><th>Paying</th><th>Owed</th><th>Paid</th><th>Actions</th></tr></thead><tbody id="affRows"><tr><td colspan="8" class="muted-cell">Loading affiliates…</td></tr></tbody></table></div>
+
+    <h3 class="aff-subhead">Assign a customer manually</h3>
+    <p class="card-sub">Use this if a customer joined through an affiliate but the referral link was not saved. Assign before the customer pays.</p>
+    <div class="aff-form-grid aff-assign-grid">
+      <div class="field"><label for="affCustomerPhone">Customer phone</label><input class="input" id="affCustomerPhone" placeholder="097 123 4567"></div>
+      <div class="field"><label for="affAssignCode">Affiliate code</label><input class="input" id="affAssignCode" placeholder="JOHN42"></div>
+      <div class="field aff-add-wrap"><label>&nbsp;</label><button class="btn" type="button" id="affAssign">Assign referral</button></div>
+    </div>
+
+    <h3 class="aff-subhead">Recent commissions</h3>
+    <div class="table-scroll"><table class="aff-table"><thead><tr><th>Date</th><th>Code</th><th>Customer phone</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="affCommissionRows"><tr><td colspan="6" class="muted-cell">Loading commissions…</td></tr></tbody></table></div>
+    <p class="card-sub" style="margin-top:1rem;margin-bottom:0">Only verified payment callbacks create commissions. Giving someone free access with the admin tools does not earn a commission. Mark a payout as paid only after you have sent the money.</p>
   </section>
 </main>
 
@@ -1444,6 +1447,12 @@ def admin_panel():
     };
     xhr.send(data);
   });
+
+  document.querySelectorAll('#catChips .cchip').forEach((b) => b.addEventListener('click', () => {
+    $('videoCategory').value = b.dataset.v;
+    document.querySelectorAll('#catChips .cchip').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  $('uploadForm').addEventListener('reset', () => document.querySelectorAll('#catChips .cchip').forEach((x) => x.classList.remove('on')));
 
   /* ---------- Library ---------- */
   function showSkeleton() {
@@ -1691,6 +1700,7 @@ def admin_panel():
   loadAffiliates();
 
   loadLive();
+  (function(){const h=new Date().getHours();$('greet').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+'. Here is TAWA today.';})();
 
   $('search').addEventListener('input', renderLibrary);
   $('refresh').addEventListener('click', loadLibrary);
