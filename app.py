@@ -122,9 +122,9 @@ def init_db():
 init_db()
 
 # ---------------------------------------------------------------------------
-# Accounts (phone number + SMS code), K17 subscription, and live
+# Accounts (phone number + SMS code), K18 subscription, and live
 # ---------------------------------------------------------------------------
-PRICE_KWACHA = 17
+PRICE_KWACHA = 18
 SUBSCRIPTION_DAYS = 30
 
 # Set SECRET_KEY to a long random value in Render so sessions survive restarts.
@@ -317,8 +317,6 @@ def me():
 
 # ===========================================================================
 # MTN MoMo Collections (Request to Pay)
-# PASTE THIS BLOCK IN PLACE OF: charge_mobile_money, pay_start and pay_webhook
-# (everything from `def charge_mobile_money` down to the end of `pay_webhook`).
 # ===========================================================================
 import base64
 import threading
@@ -527,12 +525,8 @@ def api_library():
     conn.close()
     output = []
     for r in rows:
-        category = (r['category'] or 'General').strip()
-        # Gaming is content, not a separate top-level section. Keep legacy gaming
-        # uploads inside the regular Series catalogue.
-        if category.casefold() in {'gaming', 'gameplay', 'esports'}:
-            category = 'TV Shows'
-        output.append({'id': r['id'], 'title': r['title'], 'category': category,
+        output.append({'id': r['id'], 'title': r['title'],
+                       'category': (r['category'] or 'General').strip(),
                        'upload_date': r['upload_date'],
                        # Always return the thumbnail route; it can show a safe fallback
                        # when a title has no custom image yet.
@@ -685,7 +679,7 @@ def thumb(video_id):
     if not row:
         return '', 404
     if not row['thumb_key']:
-        fallback = '''<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#164e63"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="160" r="44" fill="#38bdf8" fill-opacity=".18" stroke="#7dd3fc" stroke-width="2"/><path d="M306 136 L344 160 L306 184 Z" fill="#e0f2fe"/><text x="320" y="255" fill="#e0f2fe" font-family="Arial,sans-serif" font-size="24" text-anchor="middle" font-weight="700">TAWA</text></svg>'''
+        fallback = '''<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#17533F"/><stop offset="1" stop-color="#0B1F1A"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="160" r="44" fill="#E8873A" fill-opacity=".18" stroke="#F2A65A" stroke-width="2"/><path d="M306 136 L344 160 L306 184 Z" fill="#F3ECDC"/><text x="320" y="255" fill="#F3ECDC" font-family="Arial,sans-serif" font-size="24" text-anchor="middle" font-weight="700">TAWA</text></svg>'''
         return Response(fallback, mimetype='image/svg+xml', headers={'Cache-Control': 'public, max-age=300'})
     resp = redirect(presigned(row['thumb_key'], 86400))
     resp.headers['Cache-Control'] = 'public, max-age=3600'
@@ -1210,9 +1204,11 @@ def admin_panel():
               <option value="">Choose a row</option>
               <option value="Trending Now">Trending Now</option>
               <option value="Popular Movies">Movies</option>
-              <option value="TV Shows">Series / Shows (including gaming)</option>
+              <option value="TV Shows">TV Shows</option>
+              <option value="Series">Series</option>
+              <option value="Documentaries">Documentaries</option>
+              <option value="Gaming">Gaming</option>
               <option value="Podcasts">Podcasts</option>
-              
             </select>
           </div>
         </div>
@@ -1299,7 +1295,7 @@ def admin_panel():
 <script>
   const $ = (id) => document.getElementById(id);
   const ALLOWED = ['mp4', 'avi', 'mov', 'mkv', 'webm'];
-  const TINTS = { 'Trending Now': 'trending', 'Popular Movies': 'movies', 'TV Shows': 'shows', 'Podcasts': 'podcasts', 'Continue Watching': 'continue' };
+  const TINTS = { 'Trending Now': 'trending', 'Popular Movies': 'movies', 'TV Shows': 'shows', 'Series': 'shows', 'Documentaries': 'movies', 'Gaming': 'trending', 'Podcasts': 'podcasts', 'Continue Watching': 'continue' };
   let library = [];
   let chosenFile = null;
 
