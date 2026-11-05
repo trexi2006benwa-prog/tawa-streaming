@@ -1,715 +1,216 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TAWA - Zambian Streaming Platform</title>
-  <meta name="description" content="Watch Zambian movies, TV shows, podcasts, gaming and live events on TAWA. Unlimited streaming for K15/month.">
-  
-  <!-- Google Fonts: Bricolage Grotesque & JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  
-  <!-- Tailwind CSS via CDN (zero build step needed) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            amber: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- HLS.js for Live & HLS Video Playback -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.14/hls.min.js"></script>
-
-  <style>
-    ::-webkit-scrollbar { height: 6px; width: 6px; }
-    ::-webkit-scrollbar-track { background: #020617; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.5; } }
-    .live-dot { animation: pulse-dot 1.4s infinite ease-in-out; }
-    dialog::backdrop { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px); }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
-
-  <!-- ================= TOP NAVIGATION ================= -->
-  <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-      
-      <!-- Brand Logo -->
-      <div class="flex items-center gap-6">
-        <a href="/" class="flex items-center gap-2.5 group cursor-pointer">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
-            <span class="font-black text-xl text-slate-950">T</span>
-          </div>
-          <div>
-            <div class="flex items-baseline gap-0.5">
-              <span class="text-xl font-extrabold tracking-tight text-white">TA</span>
-              <span class="text-xl font-extrabold tracking-tight text-amber-400">WA</span>
-            </div>
-            <span class="block text-[9px] uppercase tracking-wider font-semibold text-slate-400 -mt-1">Zambian Stream</span>
-          </div>
-        </a>
-
-        <!-- Desktop Navigation Chips -->
-        <nav class="hidden md:flex items-center gap-1" id="desktopNav">
-          <button data-cat="all" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all">All</button>
-          <button data-cat="movies" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">Movies</button>
-          <button data-cat="shows" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">TV Shows</button>
-          <button data-cat="podcasts" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">Podcasts</button>
-          <button data-cat="live" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5">
-            <span>Live</span>
-            <span id="navLiveDot" class="w-2 h-2 rounded-full bg-red-500 hidden live-dot"></span>
-          </button>
-          <button data-cat="list" class="nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-all">My List</button>
-        </nav>
-      </div>
-
-      <!-- Right Controls -->
-      <div class="flex items-center gap-2.5">
-        <!-- Data Saver Toggle -->
-        <button id="dataSaverBtn" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors" title="Data-Saver Mode for Mobile Internet">
-          <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-          <span class="text-[11px] font-mono" id="dataSaverText">Data-Saver</span>
-        </button>
-
-        <!-- Search Bar -->
-        <div class="relative">
-          <input id="searchInput" type="search" placeholder="Search titles..." class="hidden sm:block w-44 md:w-56 text-xs pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all">
-          <svg class="hidden sm:block w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
-
-        <!-- Subscription Button -->
-        <button id="subBadgeBtn" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95">
-          <span id="subBadgeText">Subscribe K15</span>
-        </button>
-
-        <!-- Auth / Profile -->
-        <button id="authBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-200">
-          <span id="authLabel">Sign In</span>
-        </button>
-
-        <!-- Admin Link -->
-        <a href="/admin" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors" title="Admin Portal">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </a>
-      </div>
-    </div>
-
-    <!-- Mobile Nav Chips -->
-    <div class="md:hidden flex items-center gap-1 px-4 py-2 overflow-x-auto no-scrollbar border-t border-slate-800/60 bg-slate-950/80" id="mobileNav">
-      <button data-cat="all" class="nav-chip px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950 shrink-0">All</button>
-      <button data-cat="movies" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">Movies</button>
-      <button data-cat="shows" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">TV Shows</button>
-      <button data-cat="podcasts" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">Podcasts</button>
-      <button data-cat="live" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">Live</button>
-      <button data-cat="list" class="nav-chip px-3 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-900 shrink-0">My List</button>
-    </div>
-  </header>
-
-  <!-- ================= MAIN CONTENT ================= -->
-  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex flex-col">
-    <!-- Hero Spotlight Section -->
-    <section id="heroSection" class="relative rounded-3xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex items-end border border-slate-800/80 shadow-2xl mb-10 group">
-      <div class="absolute inset-0 z-0">
-        <img id="heroBackdrop" src="https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80" alt="Backdrop" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20"></div>
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent max-w-2xl"></div>
-        <div id="heroLiveGlow" class="absolute top-0 right-0 w-96 h-96 bg-red-600/15 blur-3xl rounded-full hidden pointer-events-none"></div>
-      </div>
-
-      <div class="relative z-10 p-6 sm:p-10 max-w-2xl">
-        <div class="flex items-center gap-2 mb-3 flex-wrap">
-          <span id="heroBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            Spotlight Zambian Release
-          </span>
-          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-900/80 border border-slate-700 text-slate-300">HD 1080p</span>
-          <span class="text-xs font-mono text-slate-400" id="heroCategoryText">Movies</span>
-        </div>
-
-        <h1 id="heroTitle" class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-none mb-3">
-          Featured Zambian Title
-        </h1>
-
-        <p id="heroDescription" class="text-xs sm:text-sm text-slate-300 line-clamp-3 mb-6 leading-relaxed max-w-xl">
-          Watch original Zambian movies, drama series, live events, podcasts, and gaming tournaments on TAWA.
-        </p>
-
-        <div class="flex items-center gap-3 flex-wrap">
-          <button id="heroPlayBtn" class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-orange-500/25 active:scale-95">
-            <svg class="w-4 h-4 fill-slate-950" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <span id="heroPlayBtnText">Watch Now</span>
-          </button>
-
-          <button id="heroListBtn" class="px-4 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm flex items-center gap-2">
-            <span id="heroListText">+ My List</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Content Rows Container -->
-    <div id="contentContainer" class="space-y-10">
-      <div class="text-center py-16 text-slate-500">
-        <div class="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-3"></div>
-        <p class="text-xs font-mono">Loading TAWA Catalogue…</p>
-      </div>
-    </div>
-  </main>
-
-  <!-- ================= FOOTER ================= -->
-  <footer class="mt-16 border-t border-slate-900 bg-slate-950 py-10 px-4 sm:px-6">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-black text-slate-950">T</div>
-        <div>
-          <p class="font-bold text-white">TAWA Streaming</p>
-          <p class="text-[11px] text-slate-500">Zambian Movies, Series, Podcasts &amp; Live Events</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-6 text-slate-400">
-        <span>Subscription: <strong class="text-white">K15 / month</strong></span>
-        <span>Mobile Money: <strong class="text-amber-400 font-mono">0766270600</strong></span>
-        <span>Lusaka, Zambia</span>
-      </div>
-      <div class="text-slate-500 text-[11px]">&copy; 2026 TAWA. All rights reserved.</div>
-    </div>
-  </footer>
-
-  <!-- ================= FULLSCREEN VIDEO PLAYER DIALOG ================= -->
-  <dialog id="playerModal" class="w-full h-full max-w-none max-h-none p-0 bg-black text-white m-0 fixed inset-0 overflow-hidden">
-    <div class="relative w-full h-full flex flex-col justify-between bg-black select-none group/player" id="playerContainer">
-      <!-- Top Bar -->
-      <div id="playerTopBar" class="absolute top-0 inset-x-0 z-30 p-4 sm:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button id="closePlayerBtn" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 id="playerTitle" class="text-white font-bold text-sm sm:text-base truncate max-w-md">Title</h2>
-              <span id="playerLiveBadge" class="hidden px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-white live-dot"></span> Live
-              </span>
-            </div>
-            <p id="playerCategory" class="text-xs text-slate-400 font-mono">TAWA Stream</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Video Surface -->
-      <div class="relative flex-1 w-full h-full flex items-center justify-center bg-black">
-        <video id="videoElement" class="w-full h-full object-contain" playsinline></video>
-        
-        <!-- Audio Only Mode (Podcasts) -->
-        <div id="audioModeVisualizer" class="hidden flex-col items-center justify-center p-8 text-center max-w-md">
-          <div class="w-24 h-24 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4">
-            <svg class="w-10 h-10 text-amber-400 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
-          </div>
-          <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2">Data-Saver Audio Mode</span>
-          <h3 id="audioModeTitle" class="text-lg font-bold text-white mb-1">Playing Audio</h3>
-        </div>
-
-        <div id="bufferingSpinner" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none bg-black/40">
-          <div class="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
-
-      <!-- Bottom Controls -->
-      <div id="playerBottomBar" class="absolute bottom-0 inset-x-0 z-30 p-4 sm:p-6 bg-gradient-to-t from-black/95 via-black/75 to-transparent flex flex-col gap-3">
-        <div class="flex items-center gap-3" id="timelineRow">
-          <span id="currentTimeLabel" class="text-xs font-mono text-slate-300 min-w-[42px] text-right">0:00</span>
-          <input id="seekBar" type="range" min="0" max="100" value="0" step="0.1" class="flex-1 h-1.5 rounded-lg bg-white/20 accent-amber-500 cursor-pointer">
-          <span id="durationLabel" class="text-xs font-mono text-slate-400 min-w-[42px]">0:00</span>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <button id="playPauseBtn" class="p-2 sm:p-2.5 rounded-full bg-white hover:bg-slate-200 text-slate-950 transition-colors">
-              <svg id="playIcon" class="w-4 h-4 fill-slate-950 ml-0.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              <svg id="pauseIcon" class="w-4 h-4 fill-slate-950 hidden" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            </button>
-            <button id="rewindBtn" class="p-2 text-white/80 hover:text-white text-xs font-mono">-10s</button>
-            <button id="forwardBtn" class="p-2 text-white/80 hover:text-white text-xs font-mono">+10s</button>
-            
-            <div class="flex items-center gap-1.5">
-              <button id="muteBtn" class="p-2 text-white/80 hover:text-white">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-              </button>
-              <input id="volumeBar" type="range" min="0" max="1" step="0.05" value="1" class="w-16 h-1 rounded bg-white/20 accent-amber-400 hidden sm:block">
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3">
-            <button id="speedBtn" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono text-xs font-semibold">1x</button>
-            <button id="fullscreenBtn" class="p-2 text-white/80 hover:text-white">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- ================= SUBSCRIPTION MODAL ================= -->
-  <dialog id="subModal" class="rounded-3xl bg-slate-900 border border-slate-800 text-white p-6 sm:p-8 max-w-lg w-full shadow-2xl">
-    <div class="relative">
-      <button id="closeSubBtn" class="absolute -top-2 -right-2 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-black text-slate-950 text-xl">K15</div>
-        <div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">Monthly Plan</span>
-          <h2 class="text-xl sm:text-2xl font-black text-white">Subscribe to TAWA</h2>
-        </div>
-      </div>
-
-      <p class="text-xs text-slate-300 mb-6">
-        Stream all Zambian movies, shows, podcasts, and live events for <strong>K15 / month</strong> via mobile money.
-      </p>
-
-      <!-- Carrier Tabs -->
-      <div class="mb-5">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">1. Choose Mobile Money Service:</label>
-        <div class="grid grid-cols-3 gap-2" id="providerTabs">
-          <button data-prov="mtn" class="prov-tab p-3 rounded-2xl border text-center bg-amber-500/15 border-amber-500 text-white">
-            <span class="font-bold text-xs block text-amber-300">MTN MoMo</span>
-            <span class="text-[10px] font-mono text-slate-400">*303#</span>
-          </button>
-          <button data-prov="airtel" class="prov-tab p-3 rounded-2xl border text-center bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700">
-            <span class="font-bold text-xs block text-red-400">Airtel</span>
-            <span class="text-[10px] font-mono text-slate-400">*115#</span>
-          </button>
-          <button data-prov="zamtel" class="prov-tab p-3 rounded-2xl border text-center bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700">
-            <span class="font-bold text-xs block text-emerald-400">Zamtel</span>
-            <span class="text-[10px] font-mono text-slate-400">*115#</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Payment Details -->
-      <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 mb-5">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">2. Send K15 to Official Number:</span>
-          <span class="text-xs font-mono font-bold text-amber-400">K15.00 ZMW</span>
-        </div>
-        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700">
-          <div>
-            <span class="text-[10px] text-slate-500 block uppercase font-mono">Receiver Number</span>
-            <span class="text-xl sm:text-2xl font-black font-mono text-white tracking-wider">0766270600</span>
-          </div>
-          <button id="copyReceiverBtn" class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5">
-            <span id="copyReceiverText">Copy</span>
-          </button>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-2 font-mono" id="carrierInstructions">
-          Dial *303# &gt; Send Money &gt; Enter 0766270600 &gt; Amount K15 &gt; Enter PIN
-        </p>
-      </div>
-
-      <!-- WhatsApp Confirmation Link -->
-      <a id="whatsappConfirmBtn" href="https://wa.me/260766270600?text=Hello%20TAWA,%20I%20have%20sent%20K15%20for%20my%20subscription.%20Please%20activate%20my%20account." target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 mb-3">
-        <span>Message TAWA on WhatsApp (0766270600)</span>
-      </a>
-
-      <button id="instantActivateBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg">
-        I've Sent Payment &bull; Activate
-      </button>
-    </div>
-  </dialog>
-
-  <!-- ================= SIGN IN MODAL ================= -->
-  <dialog id="authModal" class="rounded-3xl bg-slate-900 border border-slate-800 text-white p-6 sm:p-8 max-w-md w-full shadow-2xl">
-    <div class="relative">
-      <button id="closeAuthBtn" class="absolute -top-2 -right-2 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-
-      <div class="flex items-center gap-3 mb-2">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-black text-slate-950 text-lg">T</div>
-        <div>
-          <h2 class="text-xl font-bold text-white">Sign In to TAWA</h2>
-          <p class="text-xs text-slate-400">Enter your Zambian mobile number</p>
-        </div>
-      </div>
-
-      <div id="authStepPhone" class="space-y-4 mt-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
-          <div class="flex rounded-xl bg-slate-950 border border-slate-800 overflow-hidden focus-within:border-amber-500">
-            <div class="px-3 py-2.5 bg-slate-900 border-r border-slate-800 text-slate-300 text-xs font-mono flex items-center gap-1">
-              <span>🇿🇲</span><span>+260</span>
-            </div>
-            <input id="authPhoneInput" type="tel" placeholder="97 123 4567" class="w-full text-sm px-3.5 py-2.5 bg-transparent text-white placeholder-slate-500 focus:outline-none font-mono">
-          </div>
-        </div>
-
-        <button id="sendOtpBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs sm:text-sm">
-          Continue with Phone
-        </button>
-      </div>
-
-      <div id="authStepCode" class="space-y-4 mt-4 hidden">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Enter 6-Digit Code</label>
-          <input id="authCodeInput" type="text" maxlength="6" placeholder="123456" class="w-full text-center text-xl tracking-[0.3em] font-mono py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 focus:outline-none focus:border-amber-500">
-        </div>
-
-        <button id="verifyOtpBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs sm:text-sm">
-          Verify &amp; Sign In
-        </button>
-      </div>
-
-      <div id="authFeedback" class="text-xs text-amber-400 mt-3 min-h-[1.2rem]"></div>
-      <div class="mt-4 pt-3 border-t border-slate-800 text-center">
-        <p class="text-[11px] text-slate-500">No code yet? Pay K15 and message TAWA on <strong>0766270600</strong>.</p>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- ================= CORE CLIENT-SIDE APP LOGIC ================= -->
-  <script>
-    let library = [];
-    let liveState = { is_live: false, title: '' };
-    let currentUser = { signed_in: false, subscribed: false, phone: '', price: 15 };
-    let activeFilter = 'all';
-    let isDataSaver = false;
-    let hlsInstance = null;
-    let currentVideo = null;
-    let watchlist = JSON.parse(localStorage.getItem('tawa_list') || '[]');
-
-    const $ = (id) => document.getElementById(id);
-    const contentContainer = $('contentContainer');
-
-    const FALLBACK_ITEMS = [
-      { id: 1, title: "Mpali: Shadows of Lusaka", category: "Trending Now", duration: "1h 56m", thumb: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80", description: "Set in Lusaka, a family empire struggles against underground power brokers when an unexpected secret from the past resurfaces." },
-      { id: 2, title: "Mwansa the Great", category: "Popular Movies", duration: "1h 38m", thumb: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80", description: "An imaginative young Zambian boy embarks on an epic journey to prove his bravery and recover a cherished keepsake from the elders." },
-      { id: 3, title: "Lusaka Nights (Season 2)", category: "TV Shows", duration: "8 Episodes", thumb: "https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80", description: "Four modern women balance corporate ambitions, vibrant Lusaka nightlife, and complex relationships in Zambia's capital." },
-      { id: 4, title: "That Zed Podcast with K-Chana", category: "Podcasts", duration: "1h 15m", isAudio: true, thumb: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80", backdrop: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1600&q=80", description: "Unfiltered conversations with Zambia's biggest artists, cultural changemakers, and entrepreneurs." }
-    ];
-
-    async function apiGet(url) {
-      try { const r = await fetch(url); return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }; }
-      catch (e) { return { ok: false, status: 0, data: {} }; }
-    }
-    async function apiPost(url, body) {
-      try {
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-        return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) };
-      } catch (e) { return { ok: false, status: 0, data: {} }; }
-    }
-
-    async function init() {
-      const meRes = await apiGet('/me');
-      if (meRes.ok && meRes.data) { currentUser = meRes.data; updateUserUI(); }
-
-      const liveRes = await apiGet('/api/live');
-      if (liveRes.ok && liveRes.data) {
-        liveState = liveRes.data;
-        if (liveState.is_live) { $('navLiveDot').classList.remove('hidden'); $('heroLiveGlow').classList.remove('hidden'); }
-      }
-
-      const libRes = await apiGet('/api/library');
-      if (libRes.ok && Array.isArray(libRes.data) && libRes.data.length > 0) {
-        library = libRes.data.map(item => ({
-          ...item, duration: "Stream",
-          backdrop: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1600&q=80",
-          thumb: item.thumb || `/thumb/${item.id}`,
-          description: "Available on TAWA Streaming via Cloud Storage."
-        }));
-      } else { library = FALLBACK_ITEMS; }
-
-      renderHero();
-      renderCatalogue();
-    }
-
-    function updateUserUI() {
-      if (currentUser.signed_in) {
-        $('authLabel').textContent = currentUser.phone ? currentUser.phone.slice(-4) : 'Account';
-        if (currentUser.subscribed) {
-          $('subBadgeText').textContent = 'K15 Active';
-          $('subBadgeBtn').className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold';
-        }
-      } else { $('authLabel').textContent = 'Sign In'; }
-    }
-
-    function renderHero() {
-      const featured = library[0] || FALLBACK_ITEMS[0];
-      if (!featured) return;
-      $('heroTitle').textContent = featured.title;
-      $('heroDescription').textContent = featured.description || 'Watch now on TAWA.';
-      $('heroCategoryText').textContent = featured.category || 'Movies';
-      if (featured.backdrop) $('heroBackdrop').src = featured.backdrop;
-      $('heroListText').textContent = watchlist.includes(featured.id) ? '✓ In My List' : '+ My List';
-      $('heroPlayBtn').onclick = () => playMedia(featured);
-      $('heroListBtn').onclick = () => { toggleWatchlist(featured.id); renderHero(); };
-    }
-
-    function renderCatalogue() {
-      contentContainer.innerHTML = '';
-      const query = $('searchInput').value.trim().toLowerCase();
-      let filtered = library;
-
-      if (query) {
-        filtered = filtered.filter(item => item.title.toLowerCase().includes(query) || (item.category && item.category.toLowerCase().includes(query)));
-      } else if (activeFilter === 'movies') {
-        filtered = filtered.filter(item => item.category === 'Popular Movies' || item.category === 'Trending Now');
-      } else if (activeFilter === 'shows') {
-        filtered = filtered.filter(item => item.category === 'TV Shows');
-      } else if (activeFilter === 'podcasts') {
-        filtered = filtered.filter(item => item.category === 'Podcasts' || item.isAudio);
-      } else if (activeFilter === 'list') {
-        filtered = filtered.filter(item => watchlist.includes(item.id));
-      }
-
-      if (filtered.length === 0) {
-        contentContainer.innerHTML = `<div class="text-center py-16 text-slate-500 rounded-3xl bg-slate-900/40 border border-slate-800"><p class="text-sm font-semibold text-slate-300">No titles match your selection.</p></div>`;
-        return;
-      }
-
-      if (activeFilter === 'all' && !query) {
-        const categories = [...new Set(library.map(i => i.category || 'General'))];
-        categories.forEach(cat => {
-          const items = library.filter(i => (i.category || 'General') === cat);
-          if (items.length > 0) contentContainer.appendChild(createRow(cat, items));
-        });
-      } else {
-        const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
-        filtered.forEach(item => grid.appendChild(createCard(item)));
-        contentContainer.appendChild(grid);
-      }
-    }
-
-    function createRow(title, items) {
-      const section = document.createElement('section');
-      section.className = 'space-y-3';
-      section.innerHTML = `<h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight">${title}</h2>`;
-      const slider = document.createElement('div');
-      slider.className = 'flex gap-4 overflow-x-auto no-scrollbar scroll-smooth py-1';
-      items.forEach(item => slider.appendChild(createCard(item, false)));
-      section.appendChild(slider);
-      return section;
-    }
-
-    function createCard(item, isGrid = true) {
-      const inList = watchlist.includes(item.id);
-      const card = document.createElement('div');
-      card.className = `group relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-amber-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shrink-0 ${isGrid ? 'w-full' : 'w-48 sm:w-56'}`;
-      card.innerHTML = `
-        <div class="relative aspect-[16/10] bg-slate-950 overflow-hidden">
-          <img src="${item.thumb}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
-          <div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-slate-950/80 text-[10px] font-mono text-slate-300">${item.duration || 'Stream'}</div>
-          <div class="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <button class="play-btn w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-lg active:scale-95">
-              <svg class="w-4 h-4 fill-slate-950 ml-0.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            </button>
-            <button class="list-btn w-8 h-8 rounded-full bg-slate-900/90 text-white border border-slate-700 flex items-center justify-center">${inList ? '✓' : '+'}</button>
-          </div>
-        </div>
-        <div class="p-3">
-          <h3 class="font-bold text-xs sm:text-sm text-white truncate group-hover:text-amber-400">${item.title}</h3>
-          <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-            <span class="truncate">${item.category || 'General'}</span>
-            <span class="font-mono text-[10px]">HD</span>
-          </div>
-        </div>
-      `;
-      card.querySelector('.play-btn').onclick = (e) => { e.stopPropagation(); playMedia(item); };
-      card.querySelector('.list-btn').onclick = (e) => { e.stopPropagation(); toggleWatchlist(item.id); renderCatalogue(); };
-      return card;
-    }
-
-    function toggleWatchlist(id) {
-      const idx = watchlist.indexOf(id);
-      if (idx > -1) watchlist.splice(idx, 1); else watchlist.push(id);
-      localStorage.setItem('tawa_list', JSON.stringify(watchlist));
-    }
-
-    async function playMedia(item) {
-      if (!currentUser.signed_in) { $('authModal').showModal(); return; }
-      if (!currentUser.subscribed) { $('subModal').showModal(); return; }
-
-      currentVideo = item;
-      const vid = $('videoElement');
-      $('playerTitle').textContent = item.title;
-      $('playerCategory').textContent = item.category || 'TAWA Cloud Stream';
-      $('bufferingSpinner').classList.remove('hidden');
-
-      if (item.isAudio || isDataSaver) {
-        $('audioModeVisualizer').classList.remove('hidden');
-        $('audioModeTitle').textContent = item.title;
-        vid.classList.add('hidden');
-      } else {
-        $('audioModeVisualizer').classList.add('hidden');
-        vid.classList.remove('hidden');
-      }
-
-      $('playerModal').showModal();
-
-      const res = await apiGet(`/watch/${item.id}`);
-      $('bufferingSpinner').classList.add('hidden');
-
-      let streamUrl = res.ok && res.data && res.data.url ? res.data.url : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-
-      if (streamUrl.endsWith('.m3u8') && Hls.isSupported()) {
-        if (hlsInstance) hlsInstance.destroy();
-        hlsInstance = new Hls({ lowLatencyMode: true });
-        hlsInstance.loadSource(streamUrl);
-        hlsInstance.attachMedia(vid);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => vid.play().catch(() => {}));
-      } else {
-        vid.src = streamUrl;
-        vid.play().catch(() => {});
-      }
-    }
-
-    const vid = $('videoElement');
-    vid.onplay = () => { $('playIcon').classList.add('hidden'); $('pauseIcon').classList.remove('hidden'); };
-    vid.onpause = () => { $('playIcon').classList.remove('hidden'); $('pauseIcon').classList.add('hidden'); };
-    vid.ontimeupdate = () => {
-      if (vid.duration) {
-        $('seekBar').value = (vid.currentTime / vid.duration) * 100;
-        $('currentTimeLabel').textContent = formatTime(vid.currentTime);
-        $('durationLabel').textContent = formatTime(vid.duration);
-      }
-    };
-    $('playPauseBtn').onclick = () => vid.paused ? vid.play() : vid.pause();
-    $('rewindBtn').onclick = () => { vid.currentTime = Math.max(0, vid.currentTime - 10); };
-    $('forwardBtn').onclick = () => { vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 10); };
-    $('seekBar').oninput = (e) => { if (vid.duration) vid.currentTime = (e.target.value / 100) * vid.duration; };
-    $('volumeBar').oninput = (e) => { vid.volume = e.target.value; };
-    $('muteBtn').onclick = () => { vid.muted = !vid.muted; };
-    $('fullscreenBtn').onclick = () => {
-      const el = $('playerContainer');
-      if (!document.fullscreenElement) el.requestFullscreen().catch(() => {}); else document.exitFullscreen().catch(() => {});
-    };
-    $('speedBtn').onclick = () => {
-      const speeds = [0.75, 1, 1.25, 1.5, 2];
-      const cur = vid.playbackRate;
-      const next = speeds[(speeds.indexOf(cur) + 1) % speeds.length];
-      vid.playbackRate = next;
-      $('speedBtn').textContent = `${next}x`;
-    };
-    $('closePlayerBtn').onclick = () => {
-      vid.pause(); vid.removeAttribute('src'); vid.load();
-      if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-      $('playerModal').close();
-    };
-
-    function formatTime(secs) {
-      if (!isFinite(secs)) return '0:00';
-      const m = Math.floor(secs / 60);
-      const s = Math.floor(secs % 60);
-      return `${m}:${s < 10 ? '0' : ''}${s}`;
-    }
-
-    $('subBadgeBtn').onclick = () => $('subModal').showModal();
-    $('authBtn').onclick = () => $('authModal').showModal();
-    $('closeSubBtn').onclick = () => $('subModal').close();
-    $('closeAuthBtn').onclick = () => $('authModal').close();
-
-    $('copyReceiverBtn').onclick = async () => {
-      try {
-        await navigator.clipboard.writeText('0766270600');
-        $('copyReceiverText').textContent = 'Copied!';
-        setTimeout(() => $('copyReceiverText').textContent = 'Copy', 2000);
-      } catch (e) { alert('Payment number: 0766270600'); }
-    };
-
-    document.querySelectorAll('.prov-tab').forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll('.prov-tab').forEach(b => {
-          b.className = 'prov-tab p-3 rounded-2xl border text-center transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700';
-        });
-        btn.className = 'prov-tab p-3 rounded-2xl border text-center transition-all bg-amber-500/15 border-amber-500 text-white';
-        const prov = btn.dataset.prov;
-        if (prov === 'mtn') $('carrierInstructions').textContent = 'Dial *303# > Send Money > Enter 0766270600 > Amount K15 > Enter PIN';
-        if (prov === 'airtel') $('carrierInstructions').textContent = 'Dial *115# > Send Money > Enter 0766270600 > Amount K15 > Enter PIN';
-        if (prov === 'zamtel') $('carrierInstructions').textContent = 'Dial *115# > Send Money > Enter 0766270600 > Amount K15 > Enter PIN';
-      };
-    });
-
-    $('instantActivateBtn').onclick = () => {
-      currentUser.signed_in = true;
-      currentUser.subscribed = true;
-      currentUser.phone = currentUser.phone || '+260 97 123 4567';
-      updateUserUI();
-      $('subModal').close();
-    };
-
-    $('sendOtpBtn').onclick = async () => {
-      const phone = $('authPhoneInput').value.trim();
-      if (!phone) { $('authFeedback').textContent = 'Enter your Zambian mobile number.'; return; }
-      $('sendOtpBtn').textContent = 'Sending code…';
-      const res = await apiPost('/auth/send-code', { phone });
-      $('sendOtpBtn').textContent = 'Continue with Phone';
-      if (res.ok) {
-        $('authStepPhone').classList.add('hidden');
-        $('authStepCode').classList.remove('hidden');
-        $('authFeedback').textContent = `We sent a code to your number.`;
-      } else { $('authFeedback').textContent = res.data.error || 'Could not send code.'; }
-    };
-
-    $('verifyOtpBtn').onclick = async () => {
-      const phone = $('authPhoneInput').value.trim();
-      const code = $('authCodeInput').value.trim();
-      const res = await apiPost('/auth/verify', { phone, code });
-      if (res.ok) {
-        currentUser = res.data;
-        updateUserUI();
-        $('authModal').close();
-      } else {
-        currentUser.signed_in = true;
-        currentUser.subscribed = true;
-        currentUser.phone = '+260 ' + phone;
-        updateUserUI();
-        $('authModal').close();
-      }
-    };
-
-    document.querySelectorAll('.nav-chip').forEach(btn => {
-      btn.onclick = () => {
-        activeFilter = btn.dataset.cat;
-        document.querySelectorAll('.nav-chip').forEach(b => {
-          if (b.dataset.cat === activeFilter) {
-            b.className = 'nav-chip px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
-          } else {
-            b.className = 'nav-chip px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900';
-          }
-        });
-        renderCatalogue();
-      };
-    });
-
-    $('searchInput').oninput = renderCatalogue;
-
-    $('dataSaverBtn').onclick = () => {
-      isDataSaver = !isDataSaver;
-      $('dataSaverText').textContent = isDataSaver ? 'Data-Saver: ON' : 'Data-Saver';
-      $('dataSaverBtn').className = isDataSaver
-        ? 'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
-        : 'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200';
-    };
-
-    init();
-  </script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TAWA – Zambian Streaming</title>
+<meta name="description" content="Zambian movies, shows, podcasts and live events. K18/month on mobile money.">
+<meta name="theme-color" content="#0B1F1A">
+<meta property="og:title" content="TAWA – Zambian Streaming"><meta property="og:description" content="Zambian movies, shows, podcasts and live events for K18/month."><meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgeG1sbnM6YzJwYT0iaHR0cDovL2MycGEub3JnL21hbmlmZXN0Ij48bWV0YWRhdGE+PGMycGE6bWFuaWZlc3Q+QUFBV2dtcDFiV0lBQUFBZWFuVnRaR015Y0dFQUVRQVFnQUFBcWdBNG0zRURZekp3WVFBQUFCWmNhblZ0WWdBQUFFZHFkVzFrWXpKdFlRQVJBQkNBQUFDcUFEaWJjUU4xY200Nll6SndZVHBtTnpVNU5ESXlOaTA0WWpFMkxUUmhNemt0WWpaaVlpMHhaV1V3WmpCbE9HVmhaRFVBQUFBRGwycDFiV0lBQUFBcGFuVnRaR015WVhNQUVRQVFnQUFBcWdBNG0zRURZekp3WVM1aGMzTmxjblJwYjI1ekFBQUFBTHhxZFcxaUFBQUFSR3AxYldSalltOXlBQkVBRUlBQUFLb0FPSnR4RTJNeWNHRXVhVzVuY21Wa2FXVnVkQzUyTXdBQUFBQVlZekp6YU4zd2dqaDNHcEorTnZlUTJaNWdLaFVBQUFCd1kySnZjcU5wWkdNNlptOXliV0YwYldsdFlXZGxMM04yWnl0NGJXeHFhVzV6ZEdGdVkyVkpSSGdzZUcxd09tbHBaRG8wTW1VeE5tUmlPUzAzWldZMExUUmhaR1F0WW1JMFppMHpPREZqTkRsaU9EQmxZVEpzY21Wc1lYUnBiMjV6YUdsd2FIQmhjbVZ1ZEU5bUFBQUI0bXAxYldJQUFBQkJhblZ0WkdOaWIzSUFFUUFRZ0FBQXFnQTRtM0VUWXpKd1lTNWhZM1JwYjI1ekxuWXlBQUFBQUJoak1uTm8zQ01OK3NCN3Z2ckFEZWs1ZEZJNDd3QUFBWmxqWW05eW9tZGhZM1JwYjI1emdxSm1ZV04wYVc5dWEyTXljR0V1YjNCbGJtVmthbkJoY21GdFpYUmxjbk9oYTJsdVozSmxaR2xsYm5SemdhSmpkWEpzZUMxelpXeG1JMnAxYldKbVBXTXljR0V1WVhOelpYSjBhVzl1Y3k5ak1uQmhMbWx1WjNKbFpHbGxiblF1ZGpOa2FHRnphRmdnaGQ3Zk1qYWE2Q1NieEpiV2F0NkZvcG50dlo2RTVrWEFsQ3EwMmJTUVJzK2tabUZqZEdsdmJuZ2RZMjl0TG1GdWRHaHliM0JwWXk1amJHRjFaR1V1Y0hKdmRtbGtaV1JxY0dGeVlXMWxkR1Z5YzZGNEgyTnZiUzVoYm5Sb2NtOXdhV011YjNKcFoybHVMV052Ym1acFpHVnVZMlZuZFc1cmJtOTNibXRrWlhOamNtbHdkR2x2Ym5obVEyeGhkV1JsSUhCeWIzWnBaR1ZrSUhSb2FYTWdabWxzWlNCaGRDQjBhR1VnY21WeGRXVnpkQ0J2WmlCaElIVnpaWElnWVc1a0lHMWhlU0JvWVhabElHTnlaV0YwWldRZ2IzSWdiVzlrYVdacFpXUWdkR2hsSUdacGJHVWdZMjl1ZEdWdWRITXViWE52Wm5SM1lYSmxRV2RsYm5TaFpHNWhiV1ZtUTJ4aGRXUmxjbUZzYkVGamRHbHZibk5KYm1Oc2RXUmxaUFVBQUFESWFuVnRZZ0FBQUVCcWRXMWtZMkp2Y2dBUkFCQ0FBQUNxQURpYmNSTmpNbkJoTG1oaGMyZ3VaR0YwWVFBQUFBQVlZekp6YVB6SE82ajFtd0dVMGpmMFdLZko5YllBQUFDQVkySnZjcVZqWVd4blpuTm9ZVEkxTm1Od1lXUk5BQUFBQUFBQUFBQUFBQUFBQUdSb1lYTm9XQ0IwY2xmWUFOa3R0QjZCM0NRM1ExWWFxU2xUR1Z2QmoyVHhEWFJibi96MkJtUnVZVzFsYm1wMWJXSm1JRzFoYm1sbVpYTjBhbVY0WTJ4MWMybHZibk9Cb21WemRHRnlkQmg3Wm14bGJtZDBhQmtlQkFBQUFqNXFkVzFpQUFBQUoycDFiV1JqTW1Oc0FCRUFFSUFBQUtvQU9KdHhBMk15Y0dFdVkyeGhhVzB1ZGpJQUFBQUNEMk5pYjNLbFkyRnNaMlp6YUdFeU5UWnBjMmxuYm1GMGRYSmxlRTF6Wld4bUkycDFiV0ptUFM5ak1uQmhMM1Z5Ympwak1uQmhPbVkzTlRrME1qSTJMVGhpTVRZdE5HRXpPUzFpTm1KaUxURmxaVEJtTUdVNFpXRmtOUzlqTW5CaExuTnBaMjVoZEhWeVpXcHBibk4wWVc1alpVbEVlQ3g0YlhBNmFXbGtPbVUzT0RFMU5Ea3pMVGxpWWpRdE5EWTFOeTFoWXpVM0xUUmlPR0poT1RneVlqVmxOM0pqY21WaGRHVmtYMkZ6YzJWeWRHbHZibk9Eb21OMWNteDRMWE5sYkdZamFuVnRZbVk5WXpKd1lTNWhjM05sY25ScGIyNXpMMk15Y0dFdWFXNW5jbVZrYVdWdWRDNTJNMlJvWVhOb1dDQ0YzdDh5TnByb0pKdkVsdFpxM29XaW1lMjlub1RtUmNDVUtyVFp0SkJHejZKamRYSnNlQ3B6Wld4bUkycDFiV0ptUFdNeWNHRXVZWE56WlhKMGFXOXVjeTlqTW5CaExtRmpkR2x2Ym5NdWRqSmthR0Z6YUZnZ1ByNG1wdW5zQjB6VFU1K0M5cWkyU0RHQTNwNkNQU0hMSU9McWo2bmYrZXlpWTNWeWJIZ3BjMlZzWmlOcWRXMWlaajFqTW5CaExtRnpjMlZ5ZEdsdmJuTXZZekp3WVM1b1lYTm9MbVJoZEdGa2FHRnphRmdnOFppT0dmQm5QY1FFQnhjOWRPQ0dKSUFvTHlZWm45eGlVdFpWZjgvaW5pcDBZMnhoYVcxZloyVnVaWEpoZEc5eVgybHVabStqWkc1aGJXVnZRVzUwYUhKdmNHbGpJRVpwYkdWelozWmxjbk5wYjI1bE1TNHdMakJyYzNCbFkxWmxjbk5wYjI1bE1pNDBMakFBQUJBNGFuVnRZZ0FBQUNocWRXMWtZekpqY3dBUkFCQ0FBQUNxQURpYmNRTmpNbkJoTG5OcFoyNWhkSFZ5WlFBQUFCQUlZMkp2Y3RLRVdRSVNvZ0VtR0NGWkFnb3dnZ0lHTUlJQmphQURBZ0VDQWhSQTVhQUs3c0k1MEw2NGcvb0dRZ1U5WjFVVEFEQUtCZ2dxaGtqT1BRUURBekJKTVJjd0ZRWURWUVFLRXc1QmJuUm9jbTl3YVdNc0lGQkNRekV1TUN3R0ExVUVBeE1sUVc1MGFISnZjR2xqSUVOdmJuUmxiblFnUTNKbFpHVnVkR2xoYkhNZ1VtOXZkQ0JEUVRBZUZ3MHlOakE0TURjeE9EUXpOVFphRncweU9EQTRNRFl4T1RRek5UWmFNRVF4RnpBVkJnTlZCQW9URGtGdWRHaHliM0JwWXl3Z1VFSkRNU2t3SndZRFZRUURFeUJCYm5Sb2NtOXdhV01nUTJ4aGRXUmxJRU52Ym5SbGJuUWdVMmxuYm1sdVp6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJKaDZDbXZMVUJnRkZOVTB2VUtsT1Z0RTZkamQxN0w1U3V3WDBMZW1GaXNCTTNka2QvM2N5anhGQTNRbzVTNDZmWDAvaWhZMFZaN21mYjlLRjcwM3Q1T2pXREJXTUE0R0ExVWREd0VCL3dRRUF3SUhnREFWQmdOVkhTVUVEakFNQmdvckJnRUVBWVBvWGdJQk1Bd0dBMVVkRXdFQi93UUNNQUF3SHdZRFZSMGpCQmd3Rm9BVXpsSGlCSUZPWkZzaitPUEV6NW8rbk1IWFhNSXdDZ1lJS29aSXpqMEVBd01EWndBd1pBSXdNWE1kRko0QmV0TExWWTdPUnVFOW5vcWJiQVpPWm4vYUFyWHlUd0ZBWmZLclB6eEYydlBvSk5mMStVQ2RnMVhHQWpCd1gxemQ5V0dxWWtxbUw1U0ZxdzFReVNqcjF6SmZwSk05KzFyZER3U1BMTU9QT2pLdWlYam9VL3BVVWVHOVJ3bWhZM0JoWkZrTm5nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBUFpZUUpoT2s3TlEwNWRFVlRIZGNnYjBQZ1ZqMlZVQmJpbjR3dUc4c1g4bUQyczhXMnhoWW1FYUp0c2tkVklPb2c0cm8zNHcrdkpUMWh2QWVkdTJ4U2hHMUdrPTwvYzJwYTptYW5pZmVzdD48L21ldGFkYXRhPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzFCNUU0QSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBCMUYxQSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE2IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0REQzk3IiBzdHJva2Utb3BhY2l0eT0iLjIyIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjY0IiBjeT0iNjQiIHI9IjIyIi8+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iMzQiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjY0IiByPSI0NiIvPjwvZz48cmVjdCB4PSIxMCIgeT0iMTMiIHdpZHRoPSI0NCIgaGVpZ2h0PSI5IiByeD0iNC41IiBmaWxsPSIjRjNFQ0RDIi8+PHJlY3QgeD0iMjcuNSIgeT0iMTMiIHdpZHRoPSI5IiBoZWlnaHQ9IjM4IiByeD0iNC41IiBmaWxsPSIjRjNFQ0RDIi8+PHBhdGggZD0iTTQyIDMwdjE2bDEwLTh6IiBmaWxsPSIjRTg4NzNBIiBzdHJva2U9IiNFODg3M0EiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" type="image/svg+xml"><link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgeG1sbnM6YzJwYT0iaHR0cDovL2MycGEub3JnL21hbmlmZXN0Ij48bWV0YWRhdGE+PGMycGE6bWFuaWZlc3Q+QUFBV2dtcDFiV0lBQUFBZWFuVnRaR015Y0dFQUVRQVFnQUFBcWdBNG0zRURZekp3WVFBQUFCWmNhblZ0WWdBQUFFZHFkVzFrWXpKdFlRQVJBQkNBQUFDcUFEaWJjUU4xY200Nll6SndZVHBtTnpVNU5ESXlOaTA0WWpFMkxUUmhNemt0WWpaaVlpMHhaV1V3WmpCbE9HVmhaRFVBQUFBRGwycDFiV0lBQUFBcGFuVnRaR015WVhNQUVRQVFnQUFBcWdBNG0zRURZekp3WVM1aGMzTmxjblJwYjI1ekFBQUFBTHhxZFcxaUFBQUFSR3AxYldSalltOXlBQkVBRUlBQUFLb0FPSnR4RTJNeWNHRXVhVzVuY21Wa2FXVnVkQzUyTXdBQUFBQVlZekp6YU4zd2dqaDNHcEorTnZlUTJaNWdLaFVBQUFCd1kySnZjcU5wWkdNNlptOXliV0YwYldsdFlXZGxMM04yWnl0NGJXeHFhVzV6ZEdGdVkyVkpSSGdzZUcxd09tbHBaRG8wTW1VeE5tUmlPUzAzWldZMExUUmhaR1F0WW1JMFppMHpPREZqTkRsaU9EQmxZVEpzY21Wc1lYUnBiMjV6YUdsd2FIQmhjbVZ1ZEU5bUFBQUI0bXAxYldJQUFBQkJhblZ0WkdOaWIzSUFFUUFRZ0FBQXFnQTRtM0VUWXpKd1lTNWhZM1JwYjI1ekxuWXlBQUFBQUJoak1uTm8zQ01OK3NCN3Z2ckFEZWs1ZEZJNDd3QUFBWmxqWW05eW9tZGhZM1JwYjI1emdxSm1ZV04wYVc5dWEyTXljR0V1YjNCbGJtVmthbkJoY21GdFpYUmxjbk9oYTJsdVozSmxaR2xsYm5SemdhSmpkWEpzZUMxelpXeG1JMnAxYldKbVBXTXljR0V1WVhOelpYSjBhVzl1Y3k5ak1uQmhMbWx1WjNKbFpHbGxiblF1ZGpOa2FHRnphRmdnaGQ3Zk1qYWE2Q1NieEpiV2F0NkZvcG50dlo2RTVrWEFsQ3EwMmJTUVJzK2tabUZqZEdsdmJuZ2RZMjl0TG1GdWRHaHliM0JwWXk1amJHRjFaR1V1Y0hKdmRtbGtaV1JxY0dGeVlXMWxkR1Z5YzZGNEgyTnZiUzVoYm5Sb2NtOXdhV011YjNKcFoybHVMV052Ym1acFpHVnVZMlZuZFc1cmJtOTNibXRrWlhOamNtbHdkR2x2Ym5obVEyeGhkV1JsSUhCeWIzWnBaR1ZrSUhSb2FYTWdabWxzWlNCaGRDQjBhR1VnY21WeGRXVnpkQ0J2WmlCaElIVnpaWElnWVc1a0lHMWhlU0JvWVhabElHTnlaV0YwWldRZ2IzSWdiVzlrYVdacFpXUWdkR2hsSUdacGJHVWdZMjl1ZEdWdWRITXViWE52Wm5SM1lYSmxRV2RsYm5TaFpHNWhiV1ZtUTJ4aGRXUmxjbUZzYkVGamRHbHZibk5KYm1Oc2RXUmxaUFVBQUFESWFuVnRZZ0FBQUVCcWRXMWtZMkp2Y2dBUkFCQ0FBQUNxQURpYmNSTmpNbkJoTG1oaGMyZ3VaR0YwWVFBQUFBQVlZekp6YVB6SE82ajFtd0dVMGpmMFdLZko5YllBQUFDQVkySnZjcVZqWVd4blpuTm9ZVEkxTm1Od1lXUk5BQUFBQUFBQUFBQUFBQUFBQUdSb1lYTm9XQ0IwY2xmWUFOa3R0QjZCM0NRM1ExWWFxU2xUR1Z2QmoyVHhEWFJibi96MkJtUnVZVzFsYm1wMWJXSm1JRzFoYm1sbVpYTjBhbVY0WTJ4MWMybHZibk9Cb21WemRHRnlkQmg3Wm14bGJtZDBhQmtlQkFBQUFqNXFkVzFpQUFBQUoycDFiV1JqTW1Oc0FCRUFFSUFBQUtvQU9KdHhBMk15Y0dFdVkyeGhhVzB1ZGpJQUFBQUNEMk5pYjNLbFkyRnNaMlp6YUdFeU5UWnBjMmxuYm1GMGRYSmxlRTF6Wld4bUkycDFiV0ptUFM5ak1uQmhMM1Z5Ympwak1uQmhPbVkzTlRrME1qSTJMVGhpTVRZdE5HRXpPUzFpTm1KaUxURmxaVEJtTUdVNFpXRmtOUzlqTW5CaExuTnBaMjVoZEhWeVpXcHBibk4wWVc1alpVbEVlQ3g0YlhBNmFXbGtPbVUzT0RFMU5Ea3pMVGxpWWpRdE5EWTFOeTFoWXpVM0xUUmlPR0poT1RneVlqVmxOM0pqY21WaGRHVmtYMkZ6YzJWeWRHbHZibk9Eb21OMWNteDRMWE5sYkdZamFuVnRZbVk5WXpKd1lTNWhjM05sY25ScGIyNXpMMk15Y0dFdWFXNW5jbVZrYVdWdWRDNTJNMlJvWVhOb1dDQ0YzdDh5TnByb0pKdkVsdFpxM29XaW1lMjlub1RtUmNDVUtyVFp0SkJHejZKamRYSnNlQ3B6Wld4bUkycDFiV0ptUFdNeWNHRXVZWE56WlhKMGFXOXVjeTlqTW5CaExtRmpkR2x2Ym5NdWRqSmthR0Z6YUZnZ1ByNG1wdW5zQjB6VFU1K0M5cWkyU0RHQTNwNkNQU0hMSU9McWo2bmYrZXlpWTNWeWJIZ3BjMlZzWmlOcWRXMWlaajFqTW5CaExtRnpjMlZ5ZEdsdmJuTXZZekp3WVM1b1lYTm9MbVJoZEdGa2FHRnphRmdnOFppT0dmQm5QY1FFQnhjOWRPQ0dKSUFvTHlZWm45eGlVdFpWZjgvaW5pcDBZMnhoYVcxZloyVnVaWEpoZEc5eVgybHVabStqWkc1aGJXVnZRVzUwYUhKdmNHbGpJRVpwYkdWelozWmxjbk5wYjI1bE1TNHdMakJyYzNCbFkxWmxjbk5wYjI1bE1pNDBMakFBQUJBNGFuVnRZZ0FBQUNocWRXMWtZekpqY3dBUkFCQ0FBQUNxQURpYmNRTmpNbkJoTG5OcFoyNWhkSFZ5WlFBQUFCQUlZMkp2Y3RLRVdRSVNvZ0VtR0NGWkFnb3dnZ0lHTUlJQmphQURBZ0VDQWhSQTVhQUs3c0k1MEw2NGcvb0dRZ1U5WjFVVEFEQUtCZ2dxaGtqT1BRUURBekJKTVJjd0ZRWURWUVFLRXc1QmJuUm9jbTl3YVdNc0lGQkNRekV1TUN3R0ExVUVBeE1sUVc1MGFISnZjR2xqSUVOdmJuUmxiblFnUTNKbFpHVnVkR2xoYkhNZ1VtOXZkQ0JEUVRBZUZ3MHlOakE0TURjeE9EUXpOVFphRncweU9EQTRNRFl4T1RRek5UWmFNRVF4RnpBVkJnTlZCQW9URGtGdWRHaHliM0JwWXl3Z1VFSkRNU2t3SndZRFZRUURFeUJCYm5Sb2NtOXdhV01nUTJ4aGRXUmxJRU52Ym5SbGJuUWdVMmxuYm1sdVp6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJKaDZDbXZMVUJnRkZOVTB2VUtsT1Z0RTZkamQxN0w1U3V3WDBMZW1GaXNCTTNka2QvM2N5anhGQTNRbzVTNDZmWDAvaWhZMFZaN21mYjlLRjcwM3Q1T2pXREJXTUE0R0ExVWREd0VCL3dRRUF3SUhnREFWQmdOVkhTVUVEakFNQmdvckJnRUVBWVBvWGdJQk1Bd0dBMVVkRXdFQi93UUNNQUF3SHdZRFZSMGpCQmd3Rm9BVXpsSGlCSUZPWkZzaitPUEV6NW8rbk1IWFhNSXdDZ1lJS29aSXpqMEVBd01EWndBd1pBSXdNWE1kRko0QmV0TExWWTdPUnVFOW5vcWJiQVpPWm4vYUFyWHlUd0ZBWmZLclB6eEYydlBvSk5mMStVQ2RnMVhHQWpCd1gxemQ5V0dxWWtxbUw1U0ZxdzFReVNqcjF6SmZwSk05KzFyZER3U1BMTU9QT2pLdWlYam9VL3BVVWVHOVJ3bWhZM0JoWkZrTm5nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBUFpZUUpoT2s3TlEwNWRFVlRIZGNnYjBQZ1ZqMlZVQmJpbjR3dUc4c1g4bUQyczhXMnhoWW1FYUp0c2tkVklPb2c0cm8zNHcrdkpUMWh2QWVkdTJ4U2hHMUdrPTwvYzJwYTptYW5pZmVzdD48L21ldGFkYXRhPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzFCNUU0QSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBCMUYxQSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE2IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0REQzk3IiBzdHJva2Utb3BhY2l0eT0iLjIyIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjY0IiBjeT0iNjQiIHI9IjIyIi8+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iMzQiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjY0IiByPSI0NiIvPjwvZz48cmVjdCB4PSIxMCIgeT0iMTMiIHdpZHRoPSI0NCIgaGVpZ2h0PSI5IiByeD0iNC41IiBmaWxsPSIjRjNFQ0RDIi8+PHJlY3QgeD0iMjcuNSIgeT0iMTMiIHdpZHRoPSI5IiBoZWlnaHQ9IjM4IiByeD0iNC41IiBmaWxsPSIjRjNFQ0RDIi8+PHBhdGggZD0iTTQyIDMwdjE2bDEwLTh6IiBmaWxsPSIjRTg4NzNBIiBzdHJva2U9IiNFODg3M0EiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.14/hls.min.js"></script>
+<style>
+:root{--bg:#0B1F1A;--sf:#12312A;--ln:#1E463C;--tx:#F3ECDC;--mu:#9DB5AB;--cu:#E8873A;--ok:#4CC9A0;--lv:#E5483B}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Bricolage Grotesque',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+button,input{font:inherit;color:inherit}button{cursor:pointer;border:0;background:none}
+a{color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px;width:100%}
+header{position:sticky;top:0;z-index:40;background:rgba(11,31,26,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--ln);padding-top:env(safe-area-inset-top)}
+.bar{display:flex;align-items:center;gap:8px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:.03em;text-decoration:none}
+.brand img{width:36px;height:36px}.sp{flex:1}
+.btn{padding:9px 14px;border-radius:10px;font-weight:700;font-size:13px;border:1px solid var(--ln);background:var(--sf);display:inline-block;text-decoration:none;text-align:center}
+.cu{background:var(--cu);color:#1A0E04;border-color:var(--cu)}.okb{color:var(--ok);border-color:var(--ok)}
+#searchInput{width:140px;max-width:32vw;padding:9px 12px;border-radius:10px;border:1px solid var(--ln);background:var(--sf);color:var(--tx);font-size:13px}
+nav{display:flex;gap:8px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}
+.chip{flex:none;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--mu);border:1px solid var(--ln)}
+.chip.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--lv);margin-left:6px;animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.35;transform:scale(1.4)}}
+.hero{position:relative;margin:16px 0 24px;border-radius:24px;overflow:hidden;min-height:420px;display:flex;align-items:flex-end;border:1px solid var(--ln);
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg fill='none' stroke='%23F3ECDC' stroke-opacity='.07' stroke-width='2'%3E%3Ccircle cx='36' cy='36' r='10'/%3E%3Ccircle cx='36' cy='36' r='22'/%3E%3Cpath d='M0 0L72 72M72 0L0 72' stroke-opacity='.04'/%3E%3C/g%3E%3C/svg%3E"),linear-gradient(135deg,#17533F,var(--bg) 70%)}
+#heroBackdrop{position:absolute;right:0;top:0;width:65%;height:100%;object-fit:cover;-webkit-mask-image:linear-gradient(to left,#000 30%,transparent);mask-image:linear-gradient(to left,#000 30%,transparent);opacity:.75}
+.hin{position:relative;padding:32px;max-width:620px}
+h1{font-size:clamp(34px,6vw,60px);line-height:1;margin:0 0 12px;font-weight:800;letter-spacing:-.02em}
+.tag{display:inline-block;padding:5px 12px;border-radius:999px;background:rgba(232,135,58,.16);color:#F2A65A;font-size:12px;font-weight:700;margin-bottom:14px}
+.tag.live{background:rgba(229,72,59,.18);color:#FF8A7E}
+.d{color:#CBDAD2;font-size:15px;line-height:1.55;margin:0 0 22px;max-width:520px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.strip{display:flex;gap:10px 22px;flex-wrap:wrap;align-items:center;padding:14px 18px;border-radius:16px;background:var(--sf);border:1px solid var(--ln);margin-bottom:28px;font-size:14px;color:var(--mu)}.strip b{color:var(--tx)}
+h2.rt{font-size:20px;font-weight:700;margin:0 0 12px}section{margin-bottom:30px}
+.sl{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;scroll-snap-type:x proximity}
+.gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.card{position:relative;flex:none;width:210px;border-radius:14px;overflow:hidden;background:var(--sf);border:1px solid var(--ln);cursor:pointer;scroll-snap-align:start}
+.gr .card{width:auto}
+.th{position:relative;aspect-ratio:16/10;background:linear-gradient(135deg,#17533F,var(--bg))}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.pl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,31,26,.55);opacity:0;transition:.2s;pointer-events:none}
+.card:hover .pl,.card:focus-visible .pl{opacity:1}
+.pb{width:42px;height:42px;border-radius:50%;background:var(--cu);color:#1A0E04;display:grid;place-items:center}
+.bm{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(11,31,26,.8);border:1px solid var(--ln)}
+.meta{padding:10px 12px}.meta b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta span{font-size:12px;color:var(--mu)}
+.prog{height:3px;background:var(--ln)}.prog i{display:block;height:100%;background:var(--cu)}
+.sk{flex:none;width:210px;height:150px;border-radius:14px;background:linear-gradient(90deg,var(--sf),#1B4A3A,var(--sf));background-size:200% 100%;animation:s 1.2s infinite}
+@keyframes s{to{background-position:-200% 0}}
+.empty{text-align:center;padding:48px 16px;border-radius:20px;background:var(--sf);border:1px solid var(--ln);color:var(--mu)}
+footer{margin-top:auto;border-top:1px solid var(--ln);padding:24px 0 calc(24px + env(safe-area-inset-bottom));font-size:13px;color:var(--mu)}
+footer .wrap{display:flex;gap:12px 28px;flex-wrap:wrap;align-items:center;justify-content:space-between}footer b{color:var(--tx)}
+dialog{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:22px;padding:24px;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(5,15,12,.82);backdrop-filter:blur(10px)}
+.x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:var(--bg)}
+dialog h2{margin:0 0 4px;font-size:22px}dialog p{margin:0 0 14px;color:var(--mu);font-size:14px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.tab{padding:10px;border-radius:12px;border:1px solid var(--ln);background:var(--bg);font-size:13px;font-weight:700;color:var(--mu)}.tab.on{border-color:var(--cu);color:var(--tx)}
+.num{display:flex;justify-content:space-between;align-items:center;padding:14px;border-radius:14px;background:var(--bg);border:1px solid var(--ln);margin-bottom:8px}.num b{font-size:24px;letter-spacing:.04em}
+.in{width:100%;padding:12px;border-radius:12px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:16px;margin-bottom:12px}
+#authCodeInput{text-align:center;letter-spacing:.3em;font-size:22px}
+#playerModal{width:100%;height:100%;max-width:none;max-height:none;padding:0;margin:0;border:0;border-radius:0;background:#000;inset:0}
+#playerContainer{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+#videoElement{width:100%;height:100%;object-fit:contain}
+.top,.bot{position:absolute;left:0;right:0;z-index:5;padding:16px;display:flex;gap:12px}
+.top{top:0;align-items:center;background:linear-gradient(#000c,transparent)}.bot{bottom:0;flex-direction:column;background:linear-gradient(transparent,#000d)}
+.ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ctl button{padding:8px 10px;border-radius:10px;background:#ffffff1c;font-size:13px}
+#seekBar{flex:1;accent-color:var(--cu)}.tm{font-size:12px;min-width:40px}
+.hidden{display:none!important}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header><div class="wrap">
+<div class="bar">
+<a href="/" class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgeG1sbnM6YzJwYT0iaHR0cDovL2MycGEub3JnL21hbmlmZXN0Ij48bWV0YWRhdGE+PGMycGE6bWFuaWZlc3Q+QUFBV2dtcDFiV0lBQUFBZWFuVnRaR015Y0dFQUVRQVFnQUFBcWdBNG0zRURZekp3WVFBQUFCWmNhblZ0WWdBQUFFZHFkVzFrWXpKdFlRQVJBQkNBQUFDcUFEaWJjUU4xY200Nll6SndZVHBtTnpVNU5ESXlOaTA0WWpFMkxUUmhNemt0WWpaaVlpMHhaV1V3WmpCbE9HVmhaRFVBQUFBRGwycDFiV0lBQUFBcGFuVnRaR015WVhNQUVRQVFnQUFBcWdBNG0zRURZekp3WVM1aGMzTmxjblJwYjI1ekFBQUFBTHhxZFcxaUFBQUFSR3AxYldSalltOXlBQkVBRUlBQUFLb0FPSnR4RTJNeWNHRXVhVzVuY21Wa2FXVnVkQzUyTXdBQUFBQVlZekp6YU4zd2dqaDNHcEorTnZlUTJaNWdLaFVBQUFCd1kySnZjcU5wWkdNNlptOXliV0YwYldsdFlXZGxMM04yWnl0NGJXeHFhVzV6ZEdGdVkyVkpSSGdzZUcxd09tbHBaRG8wTW1VeE5tUmlPUzAzWldZMExUUmhaR1F0WW1JMFppMHpPREZqTkRsaU9EQmxZVEpzY21Wc1lYUnBiMjV6YUdsd2FIQmhjbVZ1ZEU5bUFBQUI0bXAxYldJQUFBQkJhblZ0WkdOaWIzSUFFUUFRZ0FBQXFnQTRtM0VUWXpKd1lTNWhZM1JwYjI1ekxuWXlBQUFBQUJoak1uTm8zQ01OK3NCN3Z2ckFEZWs1ZEZJNDd3QUFBWmxqWW05eW9tZGhZM1JwYjI1emdxSm1ZV04wYVc5dWEyTXljR0V1YjNCbGJtVmthbkJoY21GdFpYUmxjbk9oYTJsdVozSmxaR2xsYm5SemdhSmpkWEpzZUMxelpXeG1JMnAxYldKbVBXTXljR0V1WVhOelpYSjBhVzl1Y3k5ak1uQmhMbWx1WjNKbFpHbGxiblF1ZGpOa2FHRnphRmdnaGQ3Zk1qYWE2Q1NieEpiV2F0NkZvcG50dlo2RTVrWEFsQ3EwMmJTUVJzK2tabUZqZEdsdmJuZ2RZMjl0TG1GdWRHaHliM0JwWXk1amJHRjFaR1V1Y0hKdmRtbGtaV1JxY0dGeVlXMWxkR1Z5YzZGNEgyTnZiUzVoYm5Sb2NtOXdhV011YjNKcFoybHVMV052Ym1acFpHVnVZMlZuZFc1cmJtOTNibXRrWlhOamNtbHdkR2x2Ym5obVEyeGhkV1JsSUhCeWIzWnBaR1ZrSUhSb2FYTWdabWxzWlNCaGRDQjBhR1VnY21WeGRXVnpkQ0J2WmlCaElIVnpaWElnWVc1a0lHMWhlU0JvWVhabElHTnlaV0YwWldRZ2IzSWdiVzlrYVdacFpXUWdkR2hsSUdacGJHVWdZMjl1ZEdWdWRITXViWE52Wm5SM1lYSmxRV2RsYm5TaFpHNWhiV1ZtUTJ4aGRXUmxjbUZzYkVGamRHbHZibk5KYm1Oc2RXUmxaUFVBQUFESWFuVnRZZ0FBQUVCcWRXMWtZMkp2Y2dBUkFCQ0FBQUNxQURpYmNSTmpNbkJoTG1oaGMyZ3VaR0YwWVFBQUFBQVlZekp6YVB6SE82ajFtd0dVMGpmMFdLZko5YllBQUFDQVkySnZjcVZqWVd4blpuTm9ZVEkxTm1Od1lXUk5BQUFBQUFBQUFBQUFBQUFBQUdSb1lYTm9XQ0IwY2xmWUFOa3R0QjZCM0NRM1ExWWFxU2xUR1Z2QmoyVHhEWFJibi96MkJtUnVZVzFsYm1wMWJXSm1JRzFoYm1sbVpYTjBhbVY0WTJ4MWMybHZibk9Cb21WemRHRnlkQmg3Wm14bGJtZDBhQmtlQkFBQUFqNXFkVzFpQUFBQUoycDFiV1JqTW1Oc0FCRUFFSUFBQUtvQU9KdHhBMk15Y0dFdVkyeGhhVzB1ZGpJQUFBQUNEMk5pYjNLbFkyRnNaMlp6YUdFeU5UWnBjMmxuYm1GMGRYSmxlRTF6Wld4bUkycDFiV0ptUFM5ak1uQmhMM1Z5Ympwak1uQmhPbVkzTlRrME1qSTJMVGhpTVRZdE5HRXpPUzFpTm1KaUxURmxaVEJtTUdVNFpXRmtOUzlqTW5CaExuTnBaMjVoZEhWeVpXcHBibk4wWVc1alpVbEVlQ3g0YlhBNmFXbGtPbVUzT0RFMU5Ea3pMVGxpWWpRdE5EWTFOeTFoWXpVM0xUUmlPR0poT1RneVlqVmxOM0pqY21WaGRHVmtYMkZ6YzJWeWRHbHZibk9Eb21OMWNteDRMWE5sYkdZamFuVnRZbVk5WXpKd1lTNWhjM05sY25ScGIyNXpMMk15Y0dFdWFXNW5jbVZrYVdWdWRDNTJNMlJvWVhOb1dDQ0YzdDh5TnByb0pKdkVsdFpxM29XaW1lMjlub1RtUmNDVUtyVFp0SkJHejZKamRYSnNlQ3B6Wld4bUkycDFiV0ptUFdNeWNHRXVZWE56WlhKMGFXOXVjeTlqTW5CaExtRmpkR2x2Ym5NdWRqSmthR0Z6YUZnZ1ByNG1wdW5zQjB6VFU1K0M5cWkyU0RHQTNwNkNQU0hMSU9McWo2bmYrZXlpWTNWeWJIZ3BjMlZzWmlOcWRXMWlaajFqTW5CaExtRnpjMlZ5ZEdsdmJuTXZZekp3WVM1b1lYTm9MbVJoZEdGa2FHRnphRmdnOFppT0dmQm5QY1FFQnhjOWRPQ0dKSUFvTHlZWm45eGlVdFpWZjgvaW5pcDBZMnhoYVcxZloyVnVaWEpoZEc5eVgybHVabStqWkc1aGJXVnZRVzUwYUhKdmNHbGpJRVpwYkdWelozWmxjbk5wYjI1bE1TNHdMakJyYzNCbFkxWmxjbk5wYjI1bE1pNDBMakFBQUJBNGFuVnRZZ0FBQUNocWRXMWtZekpqY3dBUkFCQ0FBQUNxQURpYmNRTmpNbkJoTG5OcFoyNWhkSFZ5WlFBQUFCQUlZMkp2Y3RLRVdRSVNvZ0VtR0NGWkFnb3dnZ0lHTUlJQmphQURBZ0VDQWhSQTVhQUs3c0k1MEw2NGcvb0dRZ1U5WjFVVEFEQUtCZ2dxaGtqT1BRUURBekJKTVJjd0ZRWURWUVFLRXc1QmJuUm9jbTl3YVdNc0lGQkNRekV1TUN3R0ExVUVBeE1sUVc1MGFISnZjR2xqSUVOdmJuUmxiblFnUTNKbFpHVnVkR2xoYkhNZ1VtOXZkQ0JEUVRBZUZ3MHlOakE0TURjeE9EUXpOVFphRncweU9EQTRNRFl4T1RRek5UWmFNRVF4RnpBVkJnTlZCQW9URGtGdWRHaHliM0JwWXl3Z1VFSkRNU2t3SndZRFZRUURFeUJCYm5Sb2NtOXdhV01nUTJ4aGRXUmxJRU52Ym5SbGJuUWdVMmxuYm1sdVp6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJKaDZDbXZMVUJnRkZOVTB2VUtsT1Z0RTZkamQxN0w1U3V3WDBMZW1GaXNCTTNka2QvM2N5anhGQTNRbzVTNDZmWDAvaWhZMFZaN21mYjlLRjcwM3Q1T2pXREJXTUE0R0ExVWREd0VCL3dRRUF3SUhnREFWQmdOVkhTVUVEakFNQmdvckJnRUVBWVBvWGdJQk1Bd0dBMVVkRXdFQi93UUNNQUF3SHdZRFZSMGpCQmd3Rm9BVXpsSGlCSUZPWkZzaitPUEV6NW8rbk1IWFhNSXdDZ1lJS29aSXpqMEVBd01EWndBd1pBSXdNWE1kRko0QmV0TExWWTdPUnVFOW5vcWJiQVpPWm4vYUFyWHlUd0ZBWmZLclB6eEYydlBvSk5mMStVQ2RnMVhHQWpCd1gxemQ5V0dxWWtxbUw1U0ZxdzFReVNqcjF6SmZwSk05KzFyZER3U1BMTU9QT2pLdWlYam9VL3BVVWVHOVJ3bWhZM0JoWkZrTm5nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBUFpZUUpoT2s3TlEwNWRFVlRIZGNnYjBQZ1ZqMlZVQmJpbjR3dUc4c1g4bUQyczhXMnhoWW1FYUp0c2tkVklPb2c0cm8zNHcrdkpUMWh2QWVkdTJ4U2hHMUdrPTwvYzJwYTptYW5pZmVzdD48L21ldGFkYXRhPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzFCNUU0QSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBCMUYxQSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE2IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0REQzk3IiBzdHJva2Utb3BhY2l0eT0iLjIyIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjY0IiBjeT0iNjQiIHI9IjIyIi8+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iMzQiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjY0IiByPSI0NiIvPjwvZz48cmVjdCB4PSIxMCIgeT0iMTMiIHdpZHRoPSI0NCIgaGVpZ2h0PSI5IiByeD0iNC41IiBmaWxsPSIjRjNFQ0RDIi8+PHJlY3QgeD0iMjcuNSIgeT0iMTMiIHdpZHRoPSI5IiBoZWlnaHQ9IjM4IiByeD0iNC41IiBmaWxsPSIjRjNFQ0RDIi8+PHBhdGggZD0iTTQyIDMwdjE2bDEwLTh6IiBmaWxsPSIjRTg4NzNBIiBzdHJva2U9IiNFODg3M0EiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alt="">TAWA</a><span class="sp"></span>
+<button id="dataSaverBtn" class="btn" title="Use less mobile data">Data-Saver</button>
+<input id="searchInput" type="search" placeholder="Search" aria-label="Search titles">
+<button id="subBadgeBtn" class="btn cu"><span id="subBadgeText">Subscribe K18</span></button>
+<button id="authBtn" class="btn"><span id="authLabel">Sign In</span></button>
+</div>
+<nav id="nav"><button class="chip on" data-cat="all">All</button><button class="chip" data-cat="movies">Movies</button><button class="chip" data-cat="shows">TV Shows</button><button class="chip" data-cat="series">Series</button><button class="chip" data-cat="docs">Documentaries</button><button class="chip" data-cat="podcasts">Podcasts</button><button class="chip" data-cat="gaming">Gaming</button><button class="chip" data-cat="live">Live<span id="navLiveDot" class="dot hidden"></span></button><button class="chip" data-cat="list">My List</button></nav>
+</div></header>
+
+<main class="wrap">
+<section class="hero" id="heroSection" style="margin-bottom:24px">
+<img id="heroBackdrop" class="hidden" alt="">
+<div class="hin">
+<span id="heroBadge" class="tag">Spotlight</span>
+<h1 id="heroTitle">Zambian stories, streaming now</h1>
+<p id="heroDescription" class="d">Movies, series, podcasts and live events made in Zambia. K18 a month, paid with mobile money.</p>
+<div class="row"><button id="heroPlayBtn" class="btn cu">▶ Watch now</button><button id="heroListBtn" class="btn"><span id="heroListText">+ My List</span></button><a id="heroShareBtn" class="btn" target="_blank" rel="noopener">Share on WhatsApp</a></div>
+</div></section>
+<div id="valueStrip" class="strip"><span><b>K18 a month</b>, unlimited watching</span><span>Pay with <b>MTN, Airtel or Zamtel</b></span><span>Data-Saver for slow connections</span></div>
+<div id="contentContainer"></div>
+</main>
+
+<footer><div class="wrap"><span><b>TAWA</b> · Lusaka, Zambia · &copy; 2026</span><span>K18 / month · Mobile money <b>0766270600</b></span><a href="https://wa.me/260766270600" target="_blank" rel="noopener">Help on WhatsApp</a></div></footer>
+
+<dialog id="playerModal"><div id="playerContainer">
+<div class="top"><button id="closePlayerBtn" class="btn" aria-label="Close">✕</button><div><b id="playerTitle"></b> <span id="playerLiveBadge" class="tag live hidden" style="margin:0">Live</span><div id="playerCategory" style="font-size:12px;color:var(--mu)"></div></div></div>
+<video id="videoElement" playsinline></video>
+<div id="audioModeVisualizer" class="hidden" style="position:absolute;text-align:center;padding:24px"><span class="tag" style="background:rgba(76,201,160,.15);color:var(--ok)">Data-Saver audio</span><h3 id="audioModeTitle" style="margin:8px 0 0;font-size:20px"></h3></div>
+<div id="bufferingSpinner" class="hidden" style="position:absolute;color:var(--mu)">Loading…</div>
+<div class="bot"><div class="ctl"><span id="currentTimeLabel" class="tm">0:00</span><input id="seekBar" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek"><span id="durationLabel" class="tm">0:00</span></div>
+<div class="ctl"><button id="playPauseBtn">▶</button><button id="rewindBtn">−10s</button><button id="forwardBtn">+10s</button><button id="muteBtn">Mute</button><span class="sp"></span><button id="speedBtn">1x</button><button id="fullscreenBtn">⛶</button></div></div>
+</div></dialog>
+
+<dialog id="subModal"><button id="closeSubBtn" class="x" aria-label="Close">✕</button>
+<h2>Subscribe to TAWA</h2><p>K18 a month. Everything on TAWA, unlimited.</p>
+<div class="tabs" id="providerTabs"><button class="tab on" data-code="*303#">MTN MoMo</button><button class="tab" data-code="*115#">Airtel</button><button class="tab" data-code="*115#">Zamtel</button></div>
+<div class="num"><div><div style="font-size:12px;color:var(--mu)">Send K18 to</div><b>0766270600</b></div><button id="copyReceiverBtn" class="btn cu"><span id="copyReceiverText">Copy</span></button></div>
+<p id="carrierInstructions" style="font-size:13px"></p>
+<a id="whatsappConfirmBtn" class="btn cu" style="display:block" target="_blank" rel="noopener" href="https://wa.me/260766270600?text=Hello%20TAWA%2C%20I%20have%20sent%20K18%20for%20my%20subscription.%20Please%20activate%20my%20account.">I've paid: confirm on WhatsApp</a>
+<p id="subNote" style="margin:10px 0 0;font-size:12px">We activate your account once the payment is confirmed.</p></dialog>
+
+<dialog id="authModal"><button id="closeAuthBtn" class="x" aria-label="Close">✕</button>
+<h2>Sign in to TAWA</h2><p>Use your Zambian mobile number.</p>
+<div id="authStepPhone"><input id="authPhoneInput" class="in" type="tel" placeholder="+260 97 123 4567" autocomplete="tel"><button id="sendOtpBtn" class="btn cu" style="width:100%">Send code</button></div>
+<div id="authStepCode" class="hidden"><input id="authCodeInput" class="in" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code"><button id="verifyOtpBtn" class="btn cu" style="width:100%">Verify and sign in</button></div>
+<p id="authFeedback" style="margin:12px 0 0;min-height:1.2em;color:#F2A65A"></p></dialog>
+
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls={get:(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+let library=[],live={},user={signed_in:false,subscribed:false},filter='all',hls=null,current=null,lastSave=0;
+let saver=ls.get('tawa_saver',!!(navigator.connection&&navigator.connection.saveData)),list=ls.get('tawa_list',[]),prog=ls.get('tawa_prog',{});
+const box=$('contentContainer'),vid=$('videoElement');
+const get=async u=>{try{const r=await fetch(u);return{ok:r.ok,data:await r.json().catch(()=>({}))}}catch{return{ok:false,data:{}}}};
+const post=async(u,b)=>{try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return{ok:r.ok,data:await r.json().catch(()=>({}))}}catch{return{ok:false,data:{}}}};
+
+function skeleton(){box.innerHTML='<div class="sl">'+'<div class="sk"></div>'.repeat(6)+'</div>'}
+async function loadLib(){const r=await get('/api/library');
+ library=r.ok&&Array.isArray(r.data)?r.data.map(i=>{const t=i.thumb||'/thumb/'+i.id;return{...i,thumb:t,backdrop:i.backdrop||t,duration:i.duration||'Stream',description:i.description||'Streaming now on TAWA.'}}):[];
+ hero();render()}
+async function init(){skeleton();paintSaver();
+ const me=await get('/me');if(me.ok&&me.data)user=me.data;userUI();
+ const lv=await get('/api/live');if(lv.ok&&lv.data){live=lv.data;$('navLiveDot').classList.toggle('hidden',!live.is_live)}
+ await loadLib()}
+function userUI(){$('authLabel').textContent=user.signed_in?(user.phone?'…'+String(user.phone).slice(-4):'Account'):'Sign In';
+ const b=$('subBadgeBtn');if(user.subscribed){$('subBadgeText').textContent='K18 active';b.className='btn okb'}
+ $('valueStrip').classList.toggle('hidden',!!user.subscribed)}
+function hero(){const f=library[0];if(!f)return;
+ $('heroTitle').textContent=f.title;$('heroDescription').textContent=f.description;
+ const tg=$('heroBadge');if(live.is_live){tg.textContent='Live now'+(live.title?' · '+live.title:'');tg.className='tag live'}else{tg.textContent=f.category||'Spotlight';tg.className='tag'}
+ const im=$('heroBackdrop');im.onerror=()=>im.classList.add('hidden');im.onload=()=>im.classList.remove('hidden');im.src=f.backdrop;
+ $('heroListText').textContent=list.includes(f.id)?'✓ In My List':'+ My List';
+ $('heroPlayBtn').onclick=()=>play(f);$('heroListBtn').onclick=()=>{toggleList(f.id);hero();render()};
+ $('heroShareBtn').href='https://wa.me/?text='+encodeURIComponent('Watch '+f.title+' on TAWA: '+location.origin)}
+function toggleList(id){const i=list.indexOf(id);i>-1?list.splice(i,1):list.push(id);ls.set('tawa_list',list)}
+const frac=i=>{const p=prog[i.id];return p&&p.d?p.t/p.d:0};
+function card(i){const f=frac(i),el=document.createElement('div');el.className='card';el.tabIndex=0;
+ el.innerHTML=`<div class="th"><img src="${esc(i.thumb)}" alt="" loading="lazy" onerror="this.remove()"><div class="pl"><span class="pb">▶</span></div><button class="bm" aria-label="Toggle My List">${list.includes(i.id)?'✓':'+'}</button></div>${f>.02&&f<.95?`<div class="prog"><i style="width:${f*100}%"></i></div>`:''}<div class="meta"><b>${esc(i.title)}</b><span>${esc(i.category||'General')} · ${esc(i.duration)}</span></div>`;
+ el.onclick=()=>play(i);el.onkeydown=e=>{if(e.key==='Enter')play(i)};
+ el.querySelector('.bm').onclick=e=>{e.stopPropagation();toggleList(i.id);hero();render()};return el}
+function rowOf(t,items){const s=document.createElement('section');s.innerHTML=`<h2 class="rt">${esc(t)}</h2>`;const d=document.createElement('div');d.className='sl';items.forEach(i=>d.appendChild(card(i)));s.appendChild(d);return s}
+function render(){box.innerHTML='';
+ if(!library.length){box.innerHTML='<div class="empty"><p>We could not load the catalogue. Check your connection and try again.</p><button class="btn cu" id="retry">Try again</button></div>';$('retry').onclick=()=>{skeleton();loadLib()};return}
+ const q=$('searchInput').value.trim().toLowerCase();let it=library;
+ if(q)it=it.filter(i=>(i.title+' '+(i.category||'')).toLowerCase().includes(q));
+ else if(filter==='movies')it=it.filter(i=>['Popular Movies','Trending Now'].includes(i.category));
+ else if(filter==='shows')it=it.filter(i=>i.category==='TV Shows');
+ else if(filter==='series')it=it.filter(i=>/series/i.test(i.category||''));
+ else if(filter==='docs')it=it.filter(i=>/documentar/i.test(i.category||''));
+ else if(filter==='gaming')it=it.filter(i=>/gam/i.test(i.category||''));
+ else if(filter==='podcasts')it=it.filter(i=>i.category==='Podcasts'||i.isAudio);
+ else if(filter==='live')it=it.filter(i=>i.category==='Live');
+ else if(filter==='list')it=it.filter(i=>list.includes(i.id));
+ if(!it.length){box.innerHTML=`<div class="empty">${filter==='live'?'No live event right now. Check back soon.':filter==='list'?'Your list is empty. Tap + on any title to save it.':(q?'No titles match.':'Nothing here yet. New titles are added soon.')}</div>`;return}
+ if(filter==='all'&&!q){const cw=library.filter(i=>frac(i)>.02&&frac(i)<.95);if(cw.length)box.appendChild(rowOf('Continue watching',cw));
+  [...new Set(library.map(i=>i.category||'General'))].forEach(c=>box.appendChild(rowOf(c,library.filter(i=>(i.category||'General')===c))))}
+ else{const g=document.createElement('div');g.className='gr';it.forEach(i=>g.appendChild(card(i)));box.appendChild(g)}}
+
+async function play(i){
+ if(!user.signed_in){$('authModal').showModal();return}
+ if(!user.subscribed){$('subModal').showModal();return}
+ current=i;$('playerTitle').textContent=i.title;$('playerCategory').textContent=i.category||'TAWA';
+ $('playerLiveBadge').classList.toggle('hidden',!(live.is_live&&i.category==='Live'));
+ const audio=i.isAudio||saver;$('audioModeVisualizer').classList.toggle('hidden',!audio);$('audioModeTitle').textContent=i.title;vid.classList.toggle('hidden',!!audio);
+ $('bufferingSpinner').classList.remove('hidden');$('playerModal').showModal();
+ const r=await get('/watch/'+i.id);$('bufferingSpinner').classList.add('hidden');
+ if(!r.ok||!r.data.url){$('bufferingSpinner').textContent='We could not load this title. Close and try again.';$('bufferingSpinner').classList.remove('hidden');return}
+ const u=r.data.url;vid.onloadedmetadata=()=>{const p=prog[i.id];if(p&&p.d&&p.t/p.d<.95)vid.currentTime=p.t};
+ if(u.endsWith('.m3u8')&&window.Hls&&Hls.isSupported()){hls&&hls.destroy();hls=new Hls(saver?{startLevel:0,autoLevelCapping:0}:{});hls.loadSource(u);hls.attachMedia(vid);hls.on(Hls.Events.MANIFEST_PARSED,()=>vid.play().catch(()=>{}))}
+ else{vid.src=u;vid.play().catch(()=>{})}}
+const fmt=s=>{if(!isFinite(s))return'0:00';return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')};
+vid.onplay=()=>$('playPauseBtn').textContent='❚❚';vid.onpause=()=>$('playPauseBtn').textContent='▶';
+vid.ontimeupdate=()=>{if(!vid.duration)return;$('seekBar').value=vid.currentTime/vid.duration*100;$('currentTimeLabel').textContent=fmt(vid.currentTime);$('durationLabel').textContent=fmt(vid.duration);
+ if(current&&Date.now()-lastSave>5000){lastSave=Date.now();prog[current.id]={t:vid.currentTime,d:vid.duration};ls.set('tawa_prog',prog)}};
+$('playPauseBtn').onclick=()=>vid.paused?vid.play():vid.pause();
+$('rewindBtn').onclick=()=>vid.currentTime=Math.max(0,vid.currentTime-10);
+$('forwardBtn').onclick=()=>vid.currentTime=Math.min(vid.duration||0,vid.currentTime+10);
+$('seekBar').oninput=e=>{if(vid.duration)vid.currentTime=e.target.value/100*vid.duration};
+$('muteBtn').onclick=()=>{vid.muted=!vid.muted;$('muteBtn').textContent=vid.muted?'Unmute':'Mute'};
+$('fullscreenBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen().catch(()=>{}):$('playerContainer').requestFullscreen().catch(()=>{});
+$('speedBtn').onclick=()=>{const s=[.75,1,1.25,1.5,2],n=s[(s.indexOf(vid.playbackRate)+1)%s.length];vid.playbackRate=n;$('speedBtn').textContent=n+'x'};
+$('closePlayerBtn').onclick=()=>{vid.pause();vid.removeAttribute('src');vid.load();hls&&hls.destroy();hls=null;$('playerModal').close();render()};
+
+$('subBadgeBtn').onclick=()=>$('subModal').showModal();$('authBtn').onclick=()=>$('authModal').showModal();
+$('closeSubBtn').onclick=()=>$('subModal').close();$('closeAuthBtn').onclick=()=>$('authModal').close();
+function instr(c){$('carrierInstructions').textContent=`Dial ${c} > Send Money > 0766270600 > K18 > enter PIN`}instr('*303#');
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');instr(b.dataset.code)});
+$('copyReceiverBtn').onclick=async()=>{try{await navigator.clipboard.writeText('0766270600');$('copyReceiverText').textContent='Copied';setTimeout(()=>$('copyReceiverText').textContent='Copy',2000)}catch{alert('Payment number: 0766270600')}};
+$('sendOtpBtn').onclick=async()=>{const phone=$('authPhoneInput').value.trim();if(!phone){$('authFeedback').textContent='Enter your mobile number.';return}
+ $('sendOtpBtn').textContent='Sending…';const r=await post('/auth/send-code',{phone});$('sendOtpBtn').textContent='Send code';
+ if(r.ok){$('authStepPhone').classList.add('hidden');$('authStepCode').classList.remove('hidden');$('authFeedback').textContent='We sent a code to your number.'}else $('authFeedback').textContent=r.data.error||'Could not send the code. Try again.'};
+$('verifyOtpBtn').onclick=async()=>{const r=await post('/auth/verify',{phone:$('authPhoneInput').value.trim(),code:$('authCodeInput').value.trim()});
+ if(r.ok){user=r.data;userUI();$('authModal').close();$('authFeedback').textContent=''}else $('authFeedback').textContent=r.data.error||'That code did not work. Check it and try again.'};
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{filter=b.dataset.cat;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));render()});
+$('searchInput').oninput=render;
+function paintSaver(){$('dataSaverBtn').textContent=saver?'Data-Saver: on':'Data-Saver';$('dataSaverBtn').className='btn'+(saver?' okb':'')}
+$('dataSaverBtn').onclick=()=>{saver=!saver;ls.set('tawa_saver',saver);paintSaver()};
+init();
+</script></body></html>
