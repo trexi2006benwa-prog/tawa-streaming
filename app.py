@@ -6,6 +6,7 @@ import hmac
 import hashlib
 import secrets
 import datetime
+import math
 import mimetypes
 from functools import wraps
 
@@ -124,7 +125,7 @@ init_db()
 # ---------------------------------------------------------------------------
 # Accounts (phone number + SMS code), K18 subscription, and live
 # ---------------------------------------------------------------------------
-PRICE_KWACHA = 18
+PRICE_KWACHA = 10
 SUBSCRIPTION_DAYS = 30
 
 # Set SECRET_KEY to a long random value in Render so sessions survive restarts.
@@ -150,6 +151,7 @@ def init_accounts_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             phone TEXT UNIQUE NOT NULL,
             paid_until TEXT,
+            suspended INTEGER NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS otps (
             phone TEXT PRIMARY KEY,
@@ -168,6 +170,9 @@ def init_accounts_db():
             title TEXT, hls_url TEXT, is_live INTEGER DEFAULT 0);
         INSERT OR IGNORE INTO live (id, title, hls_url, is_live) VALUES (1, '', '', 0);
     ''')
+    user_columns = [row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if 'suspended' not in user_columns:
+        conn.execute("ALTER TABLE users ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0")
     conn.commit()
     conn.close()
 init_accounts_db()
@@ -223,8 +228,18 @@ def current_user():
     return row
 
 
+def remaining_subscription_days(user):
+    if not user or not user['paid_until']:
+        return 0
+    try:
+        seconds = (datetime.datetime.fromisoformat(user['paid_until']) - utcnow()).total_seconds()
+        return max(0, math.ceil(seconds / 86400))
+    except (TypeError, ValueError):
+        return 0
+
+
 def is_subscribed(user):
-    return bool(user and user['paid_until'] and
+    return bool(user and not user['suspended'] and user['paid_until'] and
                 datetime.datetime.fromisoformat(user['paid_until']) > utcnow())
 
 
@@ -247,7 +262,9 @@ def me_payload(user):
     if not user:
         return {'signed_in': False, 'price': PRICE_KWACHA, 'sms': bool(os.environ.get('AT_API_KEY'))}
     return {'signed_in': True, 'phone': user['phone'], 'subscribed': is_subscribed(user),
-            'paid_until': user['paid_until'], 'price': PRICE_KWACHA,
+            'paid_until': user['paid_until'],
+            'remaining_days': remaining_subscription_days(user),
+            'suspended': bool(user['suspended']), 'price': PRICE_KWACHA,
             'sms': bool(os.environ.get('AT_API_KEY'))}
 
 
@@ -633,6 +650,73 @@ def admin_grant():
     if not phone:
         return jsonify({'error': 'Enter a valid Zambian number.'}), 400
     return jsonify({'paid_until': grant_days(phone, days)})
+
+
+
+# Subscriber management: admin-only list, revoke, restore and extend.
+@app.route('/admin/subscribers', methods=['GET'])
+@requires_admin
+def admin_subscribers():
+    conn = db()
+    rows = conn.execute(
+        "SELECT u.id, u.phone, u.created_at, u.paid_until, "
+        "COALESCE(u.suspended, 0) AS suspended, "
+        "(SELECT COUNT(*) FROM payments p WHERE p.phone=u.phone AND p.status='paid') AS paid_payments, "
+        "(SELECT COALESCE(SUM(amount),0) FROM payments p WHERE p.phone=u.phone AND p.status='paid') AS total_paid "
+        "FROM users u ORDER BY u.created_at DESC, u.id DESC"
+    ).fetchall()
+    conn.close()
+    now = utcnow()
+    subscribers = []
+    for row in rows:
+        item = dict(row)
+        try:
+            expiry = datetime.datetime.fromisoformat(item['paid_until']) if item['paid_until'] else None
+        except (TypeError, ValueError):
+            expiry = None
+        days = max(0, math.ceil((expiry-now).total_seconds()/86400)) if expiry else 0
+        item['remaining_days'] = days
+        item['status'] = ('Suspended' if item['suspended'] else
+                          'Active' if expiry and expiry > now else 'Expired')
+        item['paid_until'] = expiry.isoformat() if expiry else None
+        subscribers.append(item)
+    return jsonify({'subscribers': subscribers})
+
+
+@app.route('/admin/subscribers/action', methods=['POST'])
+@requires_admin
+def admin_subscriber_action():
+    body = json_body()
+    phone = normalize_phone(body.get('phone'))
+    action = str(body.get('action') or '').lower()
+    if not phone:
+        return jsonify({'error': 'Enter a valid Zambian phone number.'}), 400
+    conn = db()
+    found = conn.execute('SELECT id FROM users WHERE phone = ?', (phone,)).fetchone()
+    conn.close()
+    if not found:
+        return jsonify({'error': 'Subscriber not found.'}), 404
+    if action in ('revoke', 'suspend'):
+        conn = db()
+        conn.execute('UPDATE users SET suspended=1 WHERE phone=?', (phone,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True, 'message': 'Premium access suspended.'})
+    if action == 'restore':
+        conn = db()
+        conn.execute('UPDATE users SET suspended=0 WHERE phone=?', (phone,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True, 'message': 'Suspension removed. The paid expiry date still applies.'})
+    if action == 'extend':
+        try:
+            days = int(body.get('days') or 0)
+        except (TypeError, ValueError):
+            days = 0
+        if not 1 <= days <= 365:
+            return jsonify({'error': 'Enter between 1 and 365 days.'}), 400
+        return jsonify({'ok': True, 'paid_until': grant_days(phone, days)})
+    return jsonify({'error': 'Choose revoke, restore or extend.'}), 400
 
 
 def allowed_file(filename):
@@ -1077,6 +1161,89 @@ def admin_panel():
   .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
   .empty strong { display: block; color: var(--text); font-size: 1.1rem; margin-bottom: 0.3rem; }
 
+  /* ---------- Subscriber management ---------- */
+  function subscriberMessage(message, kind) {
+    const el = $('subscriberMessage');
+    el.textContent = message || '';
+    el.className = 'aff-message' + (kind ? ' ' + kind : '');
+  }
+  async function subscriberPost(body) {
+    const response = await fetch('/admin/subscribers/action', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Subscriber action failed.');
+    return data;
+  }
+  function subscriberButton(label, handler) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'btn-ghost'; button.textContent = label;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try { await handler(); } catch (error) { subscriberMessage(error.message, 'err'); }
+      finally { button.disabled = false; }
+    });
+    return button;
+  }
+  async function loadSubscribers() {
+    const body = $('subscriberRows'); body.textContent = '';
+    try {
+      const response = await fetch('/admin/subscribers', {cache:'no-store'});
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load subscribers.');
+      const query = $('subscriberSearch').value.trim().replace(/\\s/g, '').toLowerCase();
+      const all = data.subscribers || [];
+      const list = all.filter(s => !query || s.phone.toLowerCase().includes(query));
+      const count = (status) => all.filter(s => s.status === status).length;
+      $('subscriberSummary').textContent = `${list.length} shown · ${count('Active')} active · ${count('Expired')} expired · ${count('Suspended')} suspended`;
+      if (!list.length) {
+        const tr = document.createElement('tr'); const td = document.createElement('td');
+        td.colSpan = 7; td.className = 'muted-cell'; td.textContent = 'No subscribers found.';
+        tr.appendChild(td); body.appendChild(tr); return;
+      }
+      list.forEach(s => {
+        const tr = document.createElement('tr');
+        const cell = value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : String(value); tr.appendChild(td); return td; };
+        cell(s.phone);
+        const statusCell = cell(s.status);
+        statusCell.style.color = s.status === 'Active' ? 'var(--ok)' : s.status === 'Suspended' ? 'var(--bad)' : 'var(--warn)';
+        cell(s.status === 'Active' ? `${s.remaining_days} day(s)` : '0 days');
+        cell(s.paid_until ? s.paid_until.slice(0,10) : 'Never');
+        cell(s.paid_payments);
+        cell('K' + Number(s.total_paid || 0).toFixed(2));
+        const actions = document.createElement('td'); const wrap = document.createElement('div'); wrap.className = 'aff-actions';
+        if (s.status === 'Suspended') {
+          wrap.appendChild(subscriberButton('Restore', async () => {
+            await subscriberPost({phone:s.phone, action:'restore'});
+            subscriberMessage('Suspension removed for ' + s.phone + '.', 'ok'); await loadSubscribers();
+          }));
+        } else {
+          wrap.appendChild(subscriberButton('Revoke access', async () => {
+            if (!confirm('Immediately suspend premium access for ' + s.phone + '?')) return;
+            await subscriberPost({phone:s.phone, action:'revoke'});
+            subscriberMessage('Premium access revoked for ' + s.phone + '.', 'ok'); await loadSubscribers();
+          }));
+        }
+        wrap.appendChild(subscriberButton('Extend', async () => {
+          const value = prompt('How many days should be added? Enter 1 to 365.');
+          if (value === null) return;
+          const days = Number(value);
+          if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Enter a whole number from 1 to 365.');
+          await subscriberPost({phone:s.phone, action:'extend', days});
+          subscriberMessage('Subscription extended for ' + s.phone + '.', 'ok'); await loadSubscribers();
+        }));
+        actions.appendChild(wrap); tr.appendChild(actions); body.appendChild(tr);
+      });
+    } catch (error) {
+      const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.colSpan = 7; td.className = 'muted-cell'; td.textContent = error.message;
+      tr.appendChild(td); body.appendChild(tr); subscriberMessage(error.message, 'err');
+    }
+  }
+  $('subscriberSearch').addEventListener('input', loadSubscribers);
+  $('subscriberRefresh').addEventListener('click', loadSubscribers);
+  loadSubscribers();
+
   /* ---------- Affiliate management ---------- */
   .aff-form-grid { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:1rem; align-items:end; margin-bottom:1.5rem; }
   .aff-form-grid .field { min-width:0; margin-bottom:0; }
@@ -1126,6 +1293,7 @@ def admin_panel():
       <span class="brand-name">TAWA<span>Admin</span></span>
     </a>
     <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:flex-end">
+      <a class="site-link" href="#subscriberManagement">Subscribers ↓</a>
       <a class="site-link" href="#affiliateManagement">Affiliate management ↓</a>
       <a class="site-link" href="/" target="_blank" rel="noopener">View Main Site →</a>
     </div>
@@ -1239,6 +1407,20 @@ def admin_panel():
     </div>
   </section>
 
+  <section class="card" aria-labelledby="subscriberTitle" id="subscriberManagement">
+    <div class="lib-head">
+      <div><h2 class="card-title" id="subscriberTitle">Subscriber management</h2>
+      <p class="card-sub" id="subscriberSummary">Manage subscriber access and expiry dates.</p></div>
+      <div class="lib-tools"><input class="input" type="search" id="subscriberSearch" placeholder="Search phone number">
+      <button class="btn-ghost" type="button" id="subscriberRefresh">Refresh</button></div>
+    </div>
+    <div id="subscriberMessage" class="aff-message" role="status" aria-live="polite"></div>
+    <div class="table-scroll"><table class="aff-table">
+      <thead><tr><th>Phone</th><th>Status</th><th>Days left</th><th>Expires</th><th>Paid payments</th><th>Total paid</th><th>Actions</th></tr></thead>
+      <tbody id="subscriberRows"><tr><td colspan="7" class="muted-cell">Loading subscribers…</td></tr></tbody>
+    </table></div>
+    <p class="card-sub" style="margin-top:1rem;margin-bottom:0">Revoke suspends premium access without deleting the account or payment history. Restore removes suspension but does not add days.</p>
+  </section>
 
   <section class="card" aria-labelledby="libTitle">
     <div class="lib-head">
