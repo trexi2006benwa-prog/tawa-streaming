@@ -1161,89 +1161,6 @@ def admin_panel():
   .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
   .empty strong { display: block; color: var(--text); font-size: 1.1rem; margin-bottom: 0.3rem; }
 
-  /* ---------- Subscriber management ---------- */
-  function subscriberMessage(message, kind) {
-    const el = $('subscriberMessage');
-    el.textContent = message || '';
-    el.className = 'aff-message' + (kind ? ' ' + kind : '');
-  }
-  async function subscriberPost(body) {
-    const response = await fetch('/admin/subscribers/action', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Subscriber action failed.');
-    return data;
-  }
-  function subscriberButton(label, handler) {
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'btn-ghost'; button.textContent = label;
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      try { await handler(); } catch (error) { subscriberMessage(error.message, 'err'); }
-      finally { button.disabled = false; }
-    });
-    return button;
-  }
-  async function loadSubscribers() {
-    const body = $('subscriberRows'); body.textContent = '';
-    try {
-      const response = await fetch('/admin/subscribers', {cache:'no-store'});
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Could not load subscribers.');
-      const query = $('subscriberSearch').value.trim().replace(/\\s/g, '').toLowerCase();
-      const all = data.subscribers || [];
-      const list = all.filter(s => !query || s.phone.toLowerCase().includes(query));
-      const count = (status) => all.filter(s => s.status === status).length;
-      $('subscriberSummary').textContent = `${list.length} shown · ${count('Active')} active · ${count('Expired')} expired · ${count('Suspended')} suspended`;
-      if (!list.length) {
-        const tr = document.createElement('tr'); const td = document.createElement('td');
-        td.colSpan = 7; td.className = 'muted-cell'; td.textContent = 'No subscribers found.';
-        tr.appendChild(td); body.appendChild(tr); return;
-      }
-      list.forEach(s => {
-        const tr = document.createElement('tr');
-        const cell = value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : String(value); tr.appendChild(td); return td; };
-        cell(s.phone);
-        const statusCell = cell(s.status);
-        statusCell.style.color = s.status === 'Active' ? 'var(--ok)' : s.status === 'Suspended' ? 'var(--bad)' : 'var(--warn)';
-        cell(s.status === 'Active' ? `${s.remaining_days} day(s)` : '0 days');
-        cell(s.paid_until ? s.paid_until.slice(0,10) : 'Never');
-        cell(s.paid_payments);
-        cell('K' + Number(s.total_paid || 0).toFixed(2));
-        const actions = document.createElement('td'); const wrap = document.createElement('div'); wrap.className = 'aff-actions';
-        if (s.status === 'Suspended') {
-          wrap.appendChild(subscriberButton('Restore', async () => {
-            await subscriberPost({phone:s.phone, action:'restore'});
-            subscriberMessage('Suspension removed for ' + s.phone + '.', 'ok'); await loadSubscribers();
-          }));
-        } else {
-          wrap.appendChild(subscriberButton('Revoke access', async () => {
-            if (!confirm('Immediately suspend premium access for ' + s.phone + '?')) return;
-            await subscriberPost({phone:s.phone, action:'revoke'});
-            subscriberMessage('Premium access revoked for ' + s.phone + '.', 'ok'); await loadSubscribers();
-          }));
-        }
-        wrap.appendChild(subscriberButton('Extend', async () => {
-          const value = prompt('How many days should be added? Enter 1 to 365.');
-          if (value === null) return;
-          const days = Number(value);
-          if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Enter a whole number from 1 to 365.');
-          await subscriberPost({phone:s.phone, action:'extend', days});
-          subscriberMessage('Subscription extended for ' + s.phone + '.', 'ok'); await loadSubscribers();
-        }));
-        actions.appendChild(wrap); tr.appendChild(actions); body.appendChild(tr);
-      });
-    } catch (error) {
-      const tr = document.createElement('tr'); const td = document.createElement('td');
-      td.colSpan = 7; td.className = 'muted-cell'; td.textContent = error.message;
-      tr.appendChild(td); body.appendChild(tr); subscriberMessage(error.message, 'err');
-    }
-  }
-  $('subscriberSearch').addEventListener('input', loadSubscribers);
-  $('subscriberRefresh').addEventListener('click', loadSubscribers);
-  loadSubscribers();
-
   /* ---------- Affiliate management ---------- */
   .aff-form-grid { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:1rem; align-items:end; margin-bottom:1.5rem; }
   .aff-form-grid .field { min-width:0; margin-bottom:0; }
@@ -1479,6 +1396,91 @@ def admin_panel():
 
 <script>
   const $ = (id) => document.getElementById(id);
+
+  /* ---------- Subscriber management ---------- */
+  function subscriberMessage(message, kind) {
+    const el = $('subscriberMessage');
+    el.textContent = message || '';
+    el.className = 'aff-message' + (kind ? ' ' + kind : '');
+  }
+  async function subscriberPost(body) {
+    const response = await fetch('/admin/subscribers/action', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Subscriber action failed.');
+    return data;
+  }
+  function subscriberButton(label, handler) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'btn-ghost'; button.textContent = label;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try { await handler(); } catch (error) { subscriberMessage(error.message, 'err'); }
+      finally { button.disabled = false; }
+    });
+    return button;
+  }
+  async function loadSubscribers() {
+    const body = $('subscriberRows'); body.textContent = '';
+    try {
+      const response = await fetch('/admin/subscribers', {cache:'no-store'});
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load subscribers.');
+      const query = $('subscriberSearch').value.trim().replace(/\\s/g, '').toLowerCase();
+      const all = data.subscribers || [];
+      const list = all.filter(s => !query || s.phone.toLowerCase().includes(query));
+      const count = (status) => all.filter(s => s.status === status).length;
+      $('subscriberSummary').textContent = `${list.length} shown · ${count('Active')} active · ${count('Expired')} expired · ${count('Suspended')} suspended`;
+      if (!list.length) {
+        const tr = document.createElement('tr'); const td = document.createElement('td');
+        td.colSpan = 7; td.className = 'muted-cell'; td.textContent = 'No subscribers found.';
+        tr.appendChild(td); body.appendChild(tr); return;
+      }
+      list.forEach(s => {
+        const tr = document.createElement('tr');
+        const cell = value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : String(value); tr.appendChild(td); return td; };
+        cell(s.phone);
+        const statusCell = cell(s.status);
+        statusCell.style.color = s.status === 'Active' ? 'var(--ok)' : s.status === 'Suspended' ? 'var(--bad)' : 'var(--warn)';
+        cell(s.status === 'Active' ? `${s.remaining_days} day(s)` : '0 days');
+        cell(s.paid_until ? s.paid_until.slice(0,10) : 'Never');
+        cell(s.paid_payments);
+        cell('K' + Number(s.total_paid || 0).toFixed(2));
+        const actions = document.createElement('td'); const wrap = document.createElement('div'); wrap.className = 'aff-actions';
+        if (s.status === 'Suspended') {
+          wrap.appendChild(subscriberButton('Restore', async () => {
+            await subscriberPost({phone:s.phone, action:'restore'});
+            subscriberMessage('Suspension removed for ' + s.phone + '.', 'ok'); await loadSubscribers();
+          }));
+        } else {
+          wrap.appendChild(subscriberButton('Revoke access', async () => {
+            if (!confirm('Immediately suspend premium access for ' + s.phone + '?')) return;
+            await subscriberPost({phone:s.phone, action:'revoke'});
+            subscriberMessage('Premium access revoked for ' + s.phone + '.', 'ok'); await loadSubscribers();
+          }));
+        }
+        wrap.appendChild(subscriberButton('Extend', async () => {
+          const value = prompt('How many days should be added? Enter 1 to 365.');
+          if (value === null) return;
+          const days = Number(value);
+          if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Enter a whole number from 1 to 365.');
+          await subscriberPost({phone:s.phone, action:'extend', days});
+          subscriberMessage('Subscription extended for ' + s.phone + '.', 'ok'); await loadSubscribers();
+        }));
+        actions.appendChild(wrap); tr.appendChild(actions); body.appendChild(tr);
+      });
+    } catch (error) {
+      const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.colSpan = 7; td.className = 'muted-cell'; td.textContent = error.message;
+      tr.appendChild(td); body.appendChild(tr); subscriberMessage(error.message, 'err');
+    }
+  }
+  $('subscriberSearch').addEventListener('input', loadSubscribers);
+  $('subscriberRefresh').addEventListener('click', loadSubscribers);
+  loadSubscribers();
+
+
   const ALLOWED = ['mp4', 'avi', 'mov', 'mkv', 'webm'];
   const TINTS = { 'Trending Now': 'trending', 'Popular Movies': 'movies', 'TV Shows': 'shows', 'Series': 'shows', 'Documentaries': 'movies', 'Gaming': 'trending', 'Podcasts': 'podcasts', 'Continue Watching': 'continue' };
   let library = [];
