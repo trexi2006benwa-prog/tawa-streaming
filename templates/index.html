@@ -251,7 +251,8 @@ function card(i){const f=frac(i),el=document.createElement('div');el.className='
  el.innerHTML=`<div class="th"><img src="${esc(i.thumb)}" alt="" loading="lazy" onerror="this.remove()"><div class="pl"><span class="pb">▶</span></div><button class="bm" aria-label="Toggle My List">${list.includes(i.id)?'✓':'+'}</button></div>${f>.02&&f<.95?`<div class="prog"><i style="width:${f*100}%"></i></div>`:''}<div class="meta"><b>${esc(i.title)}</b><span>${esc(i.category||'General')} · ${esc(i.duration)}</span></div>`;
  el.onclick=()=>play(i);el.onkeydown=e=>{if(e.key==='Enter')play(i)};
  el.querySelector('.bm').onclick=e=>{e.stopPropagation();toggleList(i.id);hero();render()};return el}
-function rowOf(t,items){const s=document.createElement('section');s.innerHTML=`<h2 class="rt">${esc(t)}</h2>`;const d=document.createElement('div');d.className='sl';items.forEach(i=>d.appendChild(card(i)));s.appendChild(d);return s}
+function rowOf(t,items){const s=document.createElement('section');const head=document.createElement('h2');head.className='rt';const link=document.createElement('button');link.type='button';link.textContent=t+'  ›';link.style.cssText='all:unset;cursor:pointer';link.onclick=()=>openCategory(t);head.appendChild(link);s.appendChild(head);const d=document.createElement('div');d.className='sl';items.forEach(i=>d.appendChild(card(i)));s.appendChild(d);return s}
+function openCategory(name){filter='category:'+name;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));syncNav();render();window.scrollTo({top:0,behavior:'smooth'})}
 function render(){box.innerHTML='';
  if(!library.length){box.innerHTML='<div class="empty"><p>We could not load the catalogue. Check your connection and try again.</p><button class="btn cu" id="retry">Try again</button></div>';$('retry').onclick=()=>{skeleton();loadLib()};return}
  const q=$('searchInput').value.trim().toLowerCase();let it=library;
@@ -261,13 +262,14 @@ function render(){box.innerHTML='';
  else if(filter==='series')it=it.filter(i=>/series/i.test(i.category||''));
  else if(filter==='docs')it=it.filter(i=>/documentar/i.test(i.category||''));
  else if(filter==='gaming')it=it.filter(i=>/gam/i.test(i.category||''));
- else if(filter==='podcasts')it=it.filter(i=>i.category==='Podcasts'||i.isAudio);
+ else if(filter==='podcasts')it=it.filter(i=>i.category==='Podcasts'||i.isAudio||!['Trending Now','Popular Movies','TV Shows','Series','Documentaries','Gaming','Live','General'].includes(i.category));
  else if(filter==='live')it=it.filter(i=>i.category==='Live');
  else if(filter==='list')it=it.filter(i=>list.includes(i.id));
+ else if(filter.startsWith('category:'))it=it.filter(i=>(i.category||'General')===filter.slice(9));
  if(!it.length){box.innerHTML=`<div class="empty">${filter==='live'?'No live event right now. Check back soon.':filter==='list'?'Your list is empty. Tap + on any title to save it.':(q?'No titles match.':'Nothing here yet. New titles are added soon.')}</div>`;return}
  if(filter==='all'&&!q){const cw=library.filter(i=>frac(i)>.02&&frac(i)<.95);if(cw.length)box.appendChild(rowOf('Continue watching',cw));
   [...new Set(library.map(i=>i.category||'General'))].forEach(c=>box.appendChild(rowOf(c,library.filter(i=>(i.category||'General')===c))))}
- else{const g=document.createElement('div');g.className='gr';it.forEach(i=>g.appendChild(card(i)));box.appendChild(g)}}
+ else{if(filter.startsWith('category:')){const heading=document.createElement('h2');heading.className='rt';heading.textContent=filter.slice(9);box.appendChild(heading);const back=document.createElement('button');back.className='btn';back.textContent='← Back to categories';back.onclick=()=>setFilter('all');box.appendChild(back)}const g=document.createElement('div');g.className='gr';it.forEach(i=>g.appendChild(card(i)));box.appendChild(g)}}
 
 /* ---- Player ---- */
 function wake(){pc.classList.remove('hide');clearTimeout(hideTimer);
