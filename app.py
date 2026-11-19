@@ -538,13 +538,13 @@ def pay_webhook():
 def api_library():
     """Public catalogue: titles and rows only. No video links."""
     conn = db()
-    rows = conn.execute("SELECT id, title, category, upload_date, thumb_key FROM videos WHERE s3_key IS NOT NULL ORDER BY upload_date DESC").fetchall()
+    rows = conn.execute("SELECT id, title, category, upload_date, thumb_key, COALESCE(views, 0) AS views FROM videos WHERE s3_key IS NOT NULL ORDER BY upload_date DESC").fetchall()
     conn.close()
     output = []
     for r in rows:
         output.append({'id': r['id'], 'title': r['title'],
                        'category': (r['category'] or 'General').strip(),
-                       'upload_date': r['upload_date'],
+                       'upload_date': r['upload_date'], 'views': r['views'],
                        # Always return the thumbnail route; it can show a safe fallback
                        # when a title has no custom image yet.
                        'thumb': f"/thumb/{r['id']}"})
@@ -798,7 +798,9 @@ def upload_video():
         
         file = request.files['video']
         title = request.form.get('title', 'Untitled')
-        category = request.form.get('category', 'General')
+        category = (request.form.get('category', 'General') or 'General').strip()[:60]
+        if not category:
+            category = 'General'
         
         # Measure size without loading the whole video into memory
         file.seek(0, os.SEEK_END)
@@ -868,6 +870,22 @@ def upload_video():
     finally:
         print("=== UPLOAD DEBUG END ===")
 
+@app.route('/admin/video/<int:video_id>/category', methods=['POST'])
+@requires_admin
+def admin_change_video_category(video_id):
+    data = request.get_json(silent=True) or request.form
+    category = str(data.get('category', '')).strip()[:60]
+    if not category:
+        return jsonify({'error': 'Enter a category name.'}), 400
+    conn = db()
+    cur = conn.execute('UPDATE videos SET category = ? WHERE id = ?', (category, video_id))
+    conn.commit()
+    conn.close()
+    if not cur.rowcount:
+        return jsonify({'error': 'Title not found.'}), 404
+    return jsonify({'ok': True, 'category': category})
+
+
 @app.route('/videos')
 @requires_admin
 def get_videos():
@@ -928,12 +946,16 @@ def admin_panel():
     total_videos = 0
     total_categories = 0
     total_views = 0
+    category_stats = []
     subs = 0
     try:
         conn = sqlite3.connect('tawa.db')
         c = conn.cursor()
         c.execute("SELECT COUNT(*), COUNT(DISTINCT category), COALESCE(SUM(views), 0) FROM videos")
         total_videos, total_categories, total_views = c.fetchone()
+        c.execute("SELECT COALESCE(NULLIF(TRIM(category), ''), 'General'), COALESCE(SUM(views),0) FROM videos GROUP BY COALESCE(NULLIF(TRIM(category), ''), 'General') ORDER BY SUM(views) DESC")
+        category_rows = c.fetchall()
+        category_stats = [{'name': row[0], 'views': int(row[1] or 0), 'percent': round((int(row[1] or 0) / total_views * 100), 1) if total_views else 0} for row in category_rows]
         c.execute("SELECT COUNT(*) FROM users WHERE paid_until > ?", (utcnow().isoformat(),))
         subs = c.fetchone()[0]
         conn.close()
@@ -1248,6 +1270,20 @@ def admin_panel():
     </div>
   </section>
 
+  <section class="card" aria-labelledby="categoryAnalyticsTitle">
+    <h2 class="card-title" id="categoryAnalyticsTitle">Views by category</h2>
+    <p class="card-sub">Share of all recorded playback starts. Percentages update as subscribers watch.</p>
+    <div style="display:grid;gap:.8rem;margin-top:1rem">
+      {% for item in category_stats %}
+      <div style="display:grid;grid-template-columns:minmax(90px,1fr) 3fr auto;gap:1rem;align-items:center">
+        <strong>{{ item.name }}</strong>
+        <div style="height:9px;background:#1E463C;border-radius:20px;overflow:hidden"><div style="height:100%;width:{{ item.percent }}%;background:#E8873A;border-radius:20px"></div></div>
+        <span style="font-family:var(--mono);white-space:nowrap">{{ item.views }} · {{ item.percent }}%</span>
+      </div>
+      {% else %}<p class="card-sub">No views recorded yet.</p>{% endfor %}
+    </div>
+  </section>
+
   <section class="card" aria-labelledby="uploadTitle">
     <h2 class="card-title" id="uploadTitle">Add a title</h2>
     <p class="card-sub">Pick a row on the home page, name the video, and drop the file in.</p>
@@ -1271,6 +1307,8 @@ def admin_panel():
             <label>Where should it appear?</label>
             <div class="chips" id="catChips"><button type="button" class="cchip" data-v="Trending Now">Trending Now</button><button type="button" class="cchip" data-v="Popular Movies">Movies</button><button type="button" class="cchip" data-v="TV Shows">TV Shows</button><button type="button" class="cchip" data-v="Series">Series</button><button type="button" class="cchip" data-v="Documentaries">Documentaries</button><button type="button" class="cchip" data-v="Gaming">Gaming</button><button type="button" class="cchip" data-v="Podcasts">Podcasts</button></div>
             <select id="videoCategory" required style="display:none"><option value="">Choose a row</option><option value="Trending Now">Trending Now</option><option value="Popular Movies">Movies</option><option value="TV Shows">TV Shows</option><option value="Series">Series</option><option value="Documentaries">Documentaries</option><option value="Gaming">Gaming</option><option value="Podcasts">Podcasts</option></select>
+            <input class="input" type="text" id="customCategory" maxlength="60" placeholder="Or enter a category/show name, e.g. Chats" style="margin-top:.65rem">
+            <p class="field-hint">Use a new name such as Chats to create its own category page. You can change it later in the library.</p>
           </div>
         </div>
 
@@ -1583,7 +1621,7 @@ def admin_panel():
   $('uploadForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const title = $('videoTitle').value.trim();
-    const category = $('videoCategory').value;
+    const category = $('customCategory').value.trim() || $('videoCategory').value;
     if (!title) return setStatus('error', 'Add a title', 'Give the video a name viewers will see.');
     if (!category) return setStatus('error', 'Choose a row', 'Pick where this video should appear on the home page.');
     if (!chosenFile) return setStatus('error', 'Choose a video', 'Drop a file into the screen or click it to browse.');
@@ -1633,10 +1671,10 @@ def admin_panel():
   });
 
   document.querySelectorAll('#catChips .cchip').forEach((b) => b.addEventListener('click', () => {
-    $('videoCategory').value = b.dataset.v;
+    $('videoCategory').value = b.dataset.v; $('customCategory').value = '';
     document.querySelectorAll('#catChips .cchip').forEach((x) => x.classList.toggle('on', x === b));
   }));
-  $('uploadForm').addEventListener('reset', () => document.querySelectorAll('#catChips .cchip').forEach((x) => x.classList.remove('on')));
+  $('uploadForm').addEventListener('reset', () => { document.querySelectorAll('#catChips .cchip').forEach((x) => x.classList.remove('on')); $('customCategory').value = ''; });
 
   /* ---------- Library ---------- */
   function showSkeleton() {
@@ -1727,6 +1765,22 @@ def admin_panel():
       } else {
         const s = document.createElement('span'); s.className = 'muted-cell'; s.textContent = 'No cloud file'; acts.appendChild(s);
       }
+      const cb = document.createElement('button');
+      cb.type = 'button'; cb.className = 'btn-ghost'; cb.textContent = 'Change category';
+      cb.onclick = async () => {
+        const next = prompt('Enter the new category/show name:', v.category || 'General');
+        if (next === null || !next.trim()) return;
+        cb.disabled = true;
+        try {
+          const response = await fetch('/admin/video/' + v.id + '/category', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({category:next.trim()})});
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || 'Could not change category.');
+          notify('success', 'Category updated', 'This title is now in ' + result.category + '.');
+          await loadLibrary();
+        } catch (err) { notify('error', 'Category update failed', err.message); }
+        finally { cb.disabled = false; }
+      };
+      acts.appendChild(cb);
       const tb = document.createElement('button');
       tb.type = 'button'; tb.className = 'btn-ghost'; tb.textContent = v.thumb ? 'Change thumbnail' : 'Add thumbnail';
       const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/jpeg,image/png,image/webp'; inp.hidden = true;
@@ -1892,7 +1946,7 @@ def admin_panel():
 </script>
 </body>
 </html>
-''', total_videos=total_videos, total_categories=total_categories, total_views=total_views, subs=subs)
+''', total_videos=total_videos, total_categories=total_categories, total_views=total_views, subs=subs, category_stats=category_stats)
 
 # Affiliate system: referral links, admin dashboard, and payment-confirmed commissions.
 from affiliates import init_affiliates
